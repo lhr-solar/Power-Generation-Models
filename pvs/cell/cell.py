@@ -16,9 +16,6 @@ from pvs.pv_interface import PVInterface
 
 
 class Cell(PVInterface):
-    k_b = 1.381e-23  # Boltzmann's constant (J/K).
-    q = 1.602e-19  # Electron charge (C).
-
     def __init__(self, env: Environment, params: dict, data_fp=None) -> None:
         super().__init__(env, params, data_fp)
 

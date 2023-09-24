@@ -12,8 +12,8 @@ sys.path.extend([".", "..", "../.."])
 import math as m
 
 from pvs.cell.cell import Cell
+from pvs.cell.c.three_param_cell import get_voltage
 from environment.environment import Environment
-
 
 class ThreeParamCell(Cell):
     def __init__(self, env: Environment, params: dict, data_fp=None) -> None:
@@ -28,46 +28,21 @@ class ThreeParamCell(Cell):
             raise Exception("Cell temperature is too low!")
 
         # Reference parameters
-        g_ref = self._params["ref_irrad"]
-        v_oc_ref = self._params["ref_voc"]
-        i_sc_ref = self._params["ref_isc"]
+        ref_g = self._params["ref_irrad"]
+        ref_v_oc = self._params["ref_voc"]
+        ref_i_sc = self._params["ref_isc"]
 
         # Curve Fitting parameters
-        n = self._params["fit_ideality_factor"]
+        fit_n = self._params["fit_ideality_factor"]
 
-        if n == 0.0:
+        if fit_n == 0.0:
             raise Exception("Cell ideality factor is too low!")
 
+        i_l = current
         g = irrad
         t = temp
-        i_l = current
 
-        # Thermal voltage
-        v_t = n * ThreeParamCell.k_b * t / ThreeParamCell.q  # 26mV
-
-        # Short circuit current
-        i_sc = i_sc_ref * g / g_ref
-
-        # Photocurrent
-        i_pv = i_sc
-
-        # Open circuit voltage
-        v_oc = v_oc_ref + v_t * m.log(g / g_ref + 1)
-
-        # Dark/reverse saturation current
-        i_0 = i_sc / (m.exp(v_oc / v_t) - 1)
-
-        # Reverse engineer voltage from diode/dark current
-        i_d = i_pv - i_l
-        if i_d < 0:
-            # Make the simple assumption that there is no avalanche breakdown;
-            # Return 0.0 and the user must assume that for negative voltages the
-            # load current is at I_SC.
-            return 0.0
-
-        v = m.log((i_d / i_0) + 1) * v_t
-
-        return v
+        return get_voltage(ref_g, ref_v_oc, ref_i_sc, fit_n, i_l, g, t)
 
     def fit_parameters(
         self, irradiance: float = None, temperature: float = None
@@ -117,4 +92,4 @@ if __name__ == "__main__":
         "fit_ideality_factor": 2.0,
     }
     cell = ThreeParamCell(env=env, params=params)  # data_fp="" TODO: link to test file.
-    cell.vis(([0, 0, 0],))
+    cell.get_iv(([0, 0, 0],))
