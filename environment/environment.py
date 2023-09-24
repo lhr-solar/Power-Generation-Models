@@ -6,6 +6,7 @@
 @date       2023-09-22
 """
 import sys
+
 sys.path.extend(["."])
 sys.path.extend([".."])
 
@@ -16,6 +17,7 @@ import pyqtgraph as pg
 from PySide6 import QtWidgets
 import common.config as CONFIG
 
+
 class Environment:
     """Environment class models external conditions experienced by the
     photovoltaic system."""
@@ -24,7 +26,6 @@ class Environment:
         """Initialize a new environment instance.
 
         Args:
-            self (Photovoltaic): Environment instance.
             filepath (str, optional): Filepath for environment data file.
                 Defaults to None.
         """
@@ -47,7 +48,6 @@ class Environment:
         incomplete set of voxels.
 
         Args:
-            self (Environment): Environment instance.
             filepath (str): Path of file to load.
 
         Returns:
@@ -60,7 +60,6 @@ class Environment:
         set of voxels.
 
         Args:
-            self (Environment): Environment instance.
             filepath (str): Path of file to save/overwrite.
         """
         self.get_voxels()
@@ -70,7 +69,6 @@ class Environment:
         """Add a voxel to our current environment.
 
         Args:
-            self (Environment): Environment instance.
             X (int): X axis position.
             Y (int): Y axis position.
             T (int): Point in time since 0s (start of simulation).
@@ -90,7 +88,6 @@ class Environment:
         """Add a set of voxels to our current environment.
 
         Args:
-            self (Environment): Environment instance.
             X (list, int): X axis position.
             Y (list, int): Y axis position.
             T (list, int): Point in time since 0s (start of simulation).
@@ -103,28 +100,21 @@ class Environment:
         """Generate voxels from a function.
 
         Args:
-            self (Environment): Environment instance.
             func ([[int, int, int, float, float]] func(void)): Function that
             explicitly returns inputs like add_voxels. Must return a set of
-            Voxels. 
+            Voxels.
         """
         self.np = np.vstack((self.np, func()))
 
     def interp_voxels(self) -> None:
         """TODO: Interpolate voxels not explicitly specified in the environment based on
         existing voxels.
-
-        Args:
-            self (Environment): Environment instance.
         """
         return
 
-    def vis_voxels(self):
+    def vis_voxels(self) -> None:
         """Visualize voxels in the current environment using PySide6, PyQtGraph.
         Runs through time.
-
-        Args:
-            self (Environment): Environment instance.
         """
         if not QtWidgets.QApplication.instance():
             app = QtWidgets.QApplication(sys.argv)
@@ -183,14 +173,11 @@ class Environment:
         win.show()
         app.exec()
 
-    def get_voxels(self):
+    def get_voxels(self) -> pd.DataFrame:
         """Get all voxels, sorted by X, Y, T axes.
 
-        Args:
-            self (Environment): Environment instance.
-
         Returns:
-            list(Voxel): List of environmental voxels.
+            pd.DataFrame: Pandas Dataframe of all voxels.
         """
         self.df = pd.DataFrame(
             self.np,
@@ -205,17 +192,43 @@ class Environment:
         self.df = self.df.sort_values(by=["T", "X", "Y"])
         return self.df
 
-    def get_voxels_slice(self, idx: int, axis: str = "T"):
+    def get_voxel(self, X: int, Y: int, T: int) -> (float, float):
+        """Get the voxel outputs associated with a set of voxel inputs.
+
+        Args:
+            X (int): X space coordinate.
+            Y (int): Y space coordinate.
+            Z (int): Z time coordinate.
+
+        Returns:
+            (float, float): Tuple of irradiance (W/m^2) and temperature (K).
+        """
+        self.df = pd.DataFrame(
+            self.np,
+            columns=[
+                f"X",
+                f"Y",
+                f"T",
+                "IRRAD",
+                "TEMP",
+            ],
+        )
+
+        voxel = self.df.loc[
+            (self.df["X"] == X) & (self.df["Y"] == Y) & (self.df["T"] == T)
+        ]
+        return voxel.values.tolist()[0][3:]
+
+    def get_voxels_slice(self, idx: int, axis: str = "T") -> pd.DataFrame:
         """Get a slice of voxels in some independent axis, sorted by X, Y, T
         axes.
 
         Args:
-            self (Environment): Environment instance.
             idx (int): Idx of slice.
             axis (str): Axis to slice. Either 'X', or 'Y', 'T'. Default T.
 
         Returns:
-            list(Voxel): List of associated environmental voxels.
+            pd.DataFrame: Pandas DataFrame of associated environmental voxels.
         """
         if axis not in ["X", "Y", "T"]:
             return None
@@ -240,25 +253,11 @@ if __name__ == "__main__":
     print(env.get_voxels())
     env.add_voxels(*np.transpose(voxels))
     print(env.get_voxels())
+    print(env.get_voxel(0, 1, 1))
 
     def generator() -> list:
         rows, columns = 50, 50
         time = 500
-
-        matrix_irrad = [
-            [100, 100, 200, 200, 300],
-            [100, 100, 200, 200, 300],
-            [50, 50, 100, 100, 150],
-            [50, 50, 100, 100, 150],
-            [50, 50, 100, 100, 100],
-        ]
-        matrix_temp = [
-            [298.15, 318.15, 338.15, 338.15, 338.15],
-            [298.15, 318.15, 318.15, 338.15, 338.15],
-            [298.15, 298.15, 318.15, 338.15, 338.15],
-            [298.15, 298.15, 318.15, 318.15, 318.15],
-            [298.15, 298.15, 318.15, 318.15, 318.15],
-        ]
 
         def get_irrad(x, y, t):
             irrad = x * y
@@ -275,8 +274,8 @@ if __name__ == "__main__":
             for x in range(columns)
         ]
 
-    env = Environment()
-    env.gen_voxels(generator)
-    print(env.get_voxels_slice(1))
-    env.vis_voxels()
-    env.save_env("./test.csv")
+    # env = Environment()
+    # env.gen_voxels(generator)
+    # print(env.get_voxels_slice(1))
+    # env.vis_voxels()
+    # env.save_env("./test.csv")

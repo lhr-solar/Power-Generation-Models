@@ -67,10 +67,9 @@ class Graph:
                     raise Exception("Invalid series type.")
 
             series["graph"] = plot_item
-        
+
     def update_series(self, series) -> None:
         # TODO: API breaking change for whatever reason.
-        print(self.series, series)
         self.series = update(self.series, series)
         keys = list(series.keys())
 

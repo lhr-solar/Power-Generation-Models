@@ -7,16 +7,13 @@
 """
 import sys
 
-sys.path.extend(["."])
-sys.path.extend([".."])
+sys.path.extend([".", "..", "../.."])
 
-import pandas as pd
-import common.config as CONFIG
 from environment.environment import Environment
 from cell.cell import Cell
 from module.module import Module
 from panel.panel import Panel
-    
+
 
 class Photovoltaic:
     """Photovoltaic class models power generation elements in the system."""
@@ -38,29 +35,6 @@ class Photovoltaic:
             self._hierarchy = hierarchy
 
         self._pos = [0, 0]
-
-    def load_pv(self, filepath: str) -> (dict, str):
-        """TODO: Load from a photovoltaic file that represents a complete or
-        incomplete set of photovoltaics.
-
-        Args:
-            self (Photovoltaic): Photovoltaic instance.
-            filepath (str): Path of file to load.
-
-        Returns:
-            (dict, str): Dict of items, hierarchy of system.
-        """
-        return {}, "CELL"
-
-    def save_pv(self, filepath: str) -> None:
-        """TODO: Save into a photovoltaic file that represents a complete or
-        incomplete set of photovoltaics.
-
-        Args:
-            self (Photovoltaic): Photovoltaic instance.
-            filepath (str): Path of file to save/overwrite.
-        """
-        return
 
     def add_item(self, id: int, item: Cell | Module | Panel, X: int, Y: int) -> bool:
         """Add an item to our current photovoltaic model. Failure if the model
@@ -137,25 +111,6 @@ class Photovoltaic:
         self._items[id]["pos"] = (X, Y)
         return True
 
-    def get_pv(self) -> dict:
-        """Get model.
-
-        Returns:
-            self (Photovoltaic): Photovoltaic instance.
-            dict: Model of PV.
-        """
-        return self._items
-
-    def set_pv_position(self, X: int, Y: int) -> None:
-        """Set the origin position of the entire PV.
-
-        Args:
-            self (Photovoltaic): Photovoltaic instance.
-            X (int): New origin X position.
-            Y (int): New origin Y position.
-        """
-        self._pos = (X, Y)
-
     def get_item_current(
         self, id: int, item_voltage: float, env: Environment, time: int
     ) -> float:
@@ -211,6 +166,58 @@ class Photovoltaic:
         """
         return (0.0, 0.0), (0.0, 0.0), 0.0
 
+    def vis_item(self, id: int, env: Environment, time_range: [int, int]) -> None:
+        """Visualize an item's I-V curve in the model over time.
+
+        Args:
+            id (int): Unique item ID to query.
+            env (Environment): Environment to generate item inputs for.
+            time_range ([int, int]): Range of time to visualize.
+        """
+        return
+
+    def load_pv(self, filepath: str) -> (dict, str):
+        """TODO: Load from a photovoltaic file that represents a complete or
+        incomplete set of photovoltaics.
+
+        Args:
+            self (Photovoltaic): Photovoltaic instance.
+            filepath (str): Path of file to load.
+
+        Returns:
+            (dict, str): Dict of items, hierarchy of system.
+        """
+        return {}, "CELL"
+
+    def save_pv(self, filepath: str) -> None:
+        """TODO: Save into a photovoltaic file that represents a complete or
+        incomplete set of photovoltaics.
+
+        Args:
+            self (Photovoltaic): Photovoltaic instance.
+            filepath (str): Path of file to save/overwrite.
+        """
+        return
+
+    def get_pv(self) -> dict:
+        """Get model.
+
+        Returns:
+            self (Photovoltaic): Photovoltaic instance.
+            dict: Model of PV.
+        """
+        return self._items
+
+    def set_pv_position(self, X: int, Y: int) -> None:
+        """Set the origin position of the entire PV.
+
+        Args:
+            self (Photovoltaic): Photovoltaic instance.
+            X (int): New origin X position.
+            Y (int): New origin Y position.
+        """
+        self._pos = (X, Y)
+
     def get_pv_current(self, pv_voltage: float, env: Environment, time: int) -> float:
         """Get the output current of the model.
 
@@ -256,16 +263,6 @@ class Photovoltaic:
         """
         return (0.0, 0.0), (0.0, 0.0), 0.0
 
-    def vis_item(self, id: int, env: Environment, time_range: [int, int]) -> None:
-        """Visualize an item's I-V curve in the model over time.
-
-        Args:
-            id (int): Unique item ID to query.
-            env (Environment): Environment to generate item inputs for.
-            time_range ([int, int]): Range of time to visualize.
-        """
-        return
-
     def vis_pv(self, env: Environment, time_range: [int, int]) -> None:
         """Visualize the model's I-V curve over time.
 
@@ -275,22 +272,21 @@ class Photovoltaic:
         """
         return
 
+
 if __name__ == "__main__":
     pv = Photovoltaic(hierarchy="Cell")
 
     # Check empty pv.
-    assert(not pv.get_pv())
+    assert not pv.get_pv()
 
     # Check adding an item
-    assert(pv.add_item(0, Cell(), 0, 0))
+    assert pv.add_item(0, Cell(), 0, 0)
 
     # Check adding item with same unique ID
-    assert(not pv.add_item(0, Cell(), 1, 1))
-    
+    assert not pv.add_item(0, Cell(), 1, 1)
+
     # Check adding item with same coordinates
-    assert(not pv.add_item(1, Cell(), 0, 0))
+    assert not pv.add_item(1, Cell(), 0, 0)
 
     # Check adding item with different hierarchy
-    assert(not pv.add_item(1, Module(), 1, 1))
-
-    
+    assert not pv.add_item(1, Module(), 1, 1)
