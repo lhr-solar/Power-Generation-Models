@@ -13,7 +13,9 @@ class ThreeParamCell(Cell):
     def __init__(self, params: dict, data_fp=None) -> None:
         super().__init__(params=params, data_fp=data_fp)
 
-    def get_voltage(self, current: float, irrad: list[float], temp: list[float]) -> float:
+    def get_voltage(
+        self, current: float, irrad: list[float], temp: list[float]
+    ) -> float:
         irrad = irrad[0]
         temp = temp[0]
 

@@ -11,9 +11,11 @@ from pv.pv import PV
 
 class Module(PV):
     def __init__(self, params: dict, data_fp=None) -> None:
-        super().__init__( params, data_fp)
+        super().__init__(params, data_fp)
 
-    def get_voltage(self, current: float, irrad: list[float], temp: list[float]) -> float:
+    def get_voltage(
+        self, current: float, irrad: list[float], temp: list[float]
+    ) -> float:
         v = 0.0
         for cell, irrad, temp in zip(self._params["cells"].values(), irrad, temp):
             v += cell["instance"].get_voltage(current, [irrad], [temp])
@@ -37,5 +39,3 @@ class Module(PV):
         self, irradiance: float = None, temperature: float = None
     ) -> dict:
         raise NotImplementedError
-
-

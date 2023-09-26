@@ -14,6 +14,7 @@ import pytest
 from environment.environment import Environment
 from pv.cell.three_param_cell import ThreeParamCell
 
+
 @pytest.fixture
 def setup():
     env = Environment()
@@ -33,6 +34,7 @@ def setup():
 
     yield env, params, time_idx
 
+
 def test_three_param_cell_default(setup):
     env, params, time_idx = setup
 
@@ -45,13 +47,14 @@ def test_three_param_cell_default(setup):
         irrad.append(g)
         temp.append(t)
 
-    assert cell.get_voltage(0,                  irrad, temp) >= params["ref_voc"]
-    assert cell.get_voltage(params["ref_isc"],  irrad, temp) == 0.0
-    assert cell.get_voltage(100,                irrad, temp) == 0.0
+    assert cell.get_voltage(0, irrad, temp) >= params["ref_voc"]
+    assert cell.get_voltage(params["ref_isc"], irrad, temp) == 0.0
+    assert cell.get_voltage(100, irrad, temp) == 0.0
 
-    assert cell.get_current(0,                  irrad, temp) >= params["ref_isc"]
-    assert cell.get_current(params["ref_voc"],  irrad, temp) == 0.0
-    assert cell.get_current(100,                irrad, temp) == 0.0
+    assert cell.get_current(0, irrad, temp) >= params["ref_isc"]
+    assert cell.get_current(params["ref_voc"], irrad, temp) == 0.0
+    assert cell.get_current(100, irrad, temp) == 0.0
+
 
 def test_three_param_cell_fit_data():
     raise NotImplementedError

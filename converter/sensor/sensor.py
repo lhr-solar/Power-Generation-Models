@@ -8,6 +8,7 @@
 
 from pv.pv_system import PVSystem
 
+
 class SourceSensor:
     def __init__(self, system: PVSystem) -> None:
         self._system = system
@@ -20,6 +21,7 @@ class SourceSensor:
 
     def get_current(self):
         pass
+
 
 class LoadSensor:
     def __init__(self, load) -> None:

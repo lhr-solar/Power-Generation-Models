@@ -11,6 +11,7 @@ import numpy as np
 import math as m
 from scipy.interpolate import interp1d as scipy_interp1d
 
+
 def update(d, u):
     for k, v in u.items():
         if isinstance(v, collections.abc.Mapping):
@@ -18,6 +19,7 @@ def update(d, u):
         else:
             d[k] = v
     return d
+
 
 def normalize(data, num_points=100):
     """Take a numpy array of list of lists, and:
@@ -28,7 +30,7 @@ def normalize(data, num_points=100):
 
     Args:
         data (np.array()): List of lists, with first axis being the axis to
-            align on. 
+            align on.
         num_points (int, optional): Number of points to return.
     """
 
@@ -42,13 +44,12 @@ def normalize(data, num_points=100):
         # Get counts of each group and sum rows based on the groupings & hence averages
         counts = np.diff(idx)
         avg = (
-            np.add.reduceat(b[:, 1:], idx[:-1], axis=0)
-            / counts.astype(float)[:, None]
+            np.add.reduceat(b[:, 1:], idx[:-1], axis=0) / counts.astype(float)[:, None]
         )
 
         # Finally concatenate for the output in desired format
         return np.c_[b[idx[:-1], 0], avg]
-    
+
     # Sort by voltage and delete dups
     data = groupby_mean(data[data[:, 0].argsort()])
 

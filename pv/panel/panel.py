@@ -13,11 +13,15 @@ class Panel(PV):
     def __init__(self, params: dict, data_fp=None) -> None:
         super().__init__(params, data_fp)
 
-    def get_voltage(self, current: float, irrad: list[float], temp: list[float]) -> float:
+    def get_voltage(
+        self, current: float, irrad: list[float], temp: list[float]
+    ) -> float:
         v = 0.0
         for module in self._params["modules"].values():
             num_cells = len(module["instance"].get_pos())
-            v += module["instance"].get_voltage(current, irrad[:num_cells], temp[:num_cells])
+            v += module["instance"].get_voltage(
+                current, irrad[:num_cells], temp[:num_cells]
+            )
             irrad = irrad[num_cells:]
             temp = temp[num_cells:]
 

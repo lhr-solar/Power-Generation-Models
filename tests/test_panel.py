@@ -117,6 +117,7 @@ def setup():
 
     yield env, params, time_idx
 
+
 def test_panel_default(setup):
     env, params, time_idx = setup
 
@@ -129,13 +130,13 @@ def test_panel_default(setup):
         irrad.append(g)
         temp.append(t)
 
-    assert panel.get_voltage(0,         irrad, temp) >= 0.721 * 4
-    assert panel.get_voltage(6.15,      irrad, temp) == 0.0
-    assert panel.get_voltage(100,       irrad, temp) == 0.0
+    assert panel.get_voltage(0, irrad, temp) >= 0.721 * 4
+    assert panel.get_voltage(6.15, irrad, temp) == 0.0
+    assert panel.get_voltage(100, irrad, temp) == 0.0
 
-    assert panel.get_current(0,         irrad, temp) >= 6.15
-    assert panel.get_current(0.721*4,   irrad, temp) == 0.0
-    assert panel.get_current(100,       irrad, temp) == 0.0
+    assert panel.get_current(0, irrad, temp) >= 6.15
+    assert panel.get_current(0.721 * 4, irrad, temp) == 0.0
+    assert panel.get_current(100, irrad, temp) == 0.0
 
 
 def test_panel_get_pos(setup):

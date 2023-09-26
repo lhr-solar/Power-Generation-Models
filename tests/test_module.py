@@ -72,6 +72,7 @@ def setup():
 
     yield env, params, time_idx
 
+
 def test_module_default(setup):
     env, params, time_idx = setup
 
@@ -84,13 +85,13 @@ def test_module_default(setup):
         irrad.append(g)
         temp.append(t)
 
-    assert module.get_voltage(0,        irrad, temp) >= 0.721*3
-    assert module.get_voltage(6.15,     irrad, temp) == 0.0
-    assert module.get_voltage(100,      irrad, temp) == 0.0
+    assert module.get_voltage(0, irrad, temp) >= 0.721 * 3
+    assert module.get_voltage(6.15, irrad, temp) == 0.0
+    assert module.get_voltage(100, irrad, temp) == 0.0
 
-    assert module.get_current(0,        irrad, temp) >= 6.15
-    assert module.get_current(0.721*3,  irrad, temp) == 0.0
-    assert module.get_current(100,      irrad, temp) == 0.0
+    assert module.get_current(0, irrad, temp) >= 6.15
+    assert module.get_current(0.721 * 3, irrad, temp) == 0.0
+    assert module.get_current(100, irrad, temp) == 0.0
 
 
 def test_module_get_pos(setup):
