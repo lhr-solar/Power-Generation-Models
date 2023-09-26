@@ -36,6 +36,7 @@ def get_voltage(
 
     # Open circuit voltage
     cdef float v_oc = ref_v_oc + v_t * m.log((g / ref_g) + 1)
+    print(v_oc)
 
     # Dark/reverse saturation current
     cdef float i_0 = i_sc / (m.exp(v_oc / v_t) - 1)

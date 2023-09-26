@@ -5,17 +5,17 @@
 @version    0.4.0
 @date       2023-09-24
 """
-from environment.environment import Environment
 from pv.cell.c.three_param_cell import get_voltage
 from pv.cell.cell import Cell
 
 
 class ThreeParamCell(Cell):
-    def __init__(self, env: Environment, params: dict, data_fp=None) -> None:
-        super().__init__(env=env, params=params, data_fp=data_fp)
+    def __init__(self, params: dict, data_fp=None) -> None:
+        super().__init__(params=params, data_fp=data_fp)
 
-    def get_voltage(self, current: float, root_pos: (int, int, int)) -> float:
-        (irrad, temp) = self._env.get_voxel(*root_pos)
+    def get_voltage(self, current: float, irrad: list[float], temp: list[float]) -> float:
+        irrad = irrad[0]
+        temp = temp[0]
 
         if irrad == 0.0:
             raise Exception("Incident irradiance is too low!")

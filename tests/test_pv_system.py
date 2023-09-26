@@ -11,34 +11,43 @@ import sys
 sys.path.extend(["."])
 
 import numpy as np
-
+import pytest
 from environment.environment import Environment
 from pv.cell.three_param_cell import ThreeParamCell
 from pv.pv_system import PVSystem
 
-voxels = [
-    [0, 0, 0, 1000, 298.15],
-    [1, 0, 0, 500, 298.15],
-    [2, 0, 0, 250, 298.15],
-    [3, 0, 0, 750, 298.15],
-]
-env = Environment()
-env.add_voxels(*np.transpose(voxels))
+@pytest.fixture
+def setup():
+    voxels = [
+        [0, 0, 0, 1000, 298.15],
+        [1, 0, 0, 500, 298.15],
+        [2, 0, 0, 250, 298.15],
+        [3, 0, 0, 750, 298.15],
+    ]
+    env = Environment()
+    env.add_voxels(*np.transpose(voxels))
+
+    params = {
+        "ref_irrad": 1000.0,  # W/m^2
+        "ref_temp": 298.15,  # Kelvin
+        "ref_voc": 0.721,  # Volts
+        "ref_isc": 6.15,  # Amps
+        "fit_ideality_factor": 2.0,
+    }
+
+    time_idx = 0
+
+    yield env, params, time_idx
 
 
-def test_pv_system():
+def test_pv_system(setup):
+    env, params, time_idx = setup
+
     system = PVSystem()
     system.add_pv(
         0,
         ThreeParamCell(
-            env=env,
-            params={
-                "ref_irrad": 1000.0,  # W/m^2
-                "ref_temp": 298.15,  # Kelvin
-                "ref_voc": 0.721,  # Volts
-                "ref_isc": 6.15,  # Amps
-                "fit_ideality_factor": 2.0,
-            },
+            params=params,
         ),
         0,
         0,
@@ -47,20 +56,22 @@ def test_pv_system():
     system.add_pv(
         1,
         ThreeParamCell(
-            env=env,
-            params={
-                "ref_irrad": 1000.0,  # W/m^2
-                "ref_temp": 298.15,  # Kelvin
-                "ref_voc": 0.721,  # Volts
-                "ref_isc": 6.15,  # Amps
-                "fit_ideality_factor": 2.0,
-            },
+            params=params,
         ),
         1,
         0,
     )
 
     system.rem_pv(0)
+
+    irrad = []
+    temp = []
+    pos = system.get_pos()
+    for p in pos:
+        g, t = env.get_voxel(*p, time_idx)
+        irrad.append(g)
+        temp.append(t)
+
     assert system.get_pv_voltage(1, 0, 0) >= 0.721
     assert system.get_pv_voltage(1, 6.15, 0) == 0.0
     assert system.get_pv_voltage(1, 100, 0) == 0.0

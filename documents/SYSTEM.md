@@ -14,16 +14,107 @@ particular:
   PV generation into usable energy, and
 - Analyze output effects into resistive, inductive, and capacitive loads.
 
+---
+
+## High Level Overview
+
 ```mermaid
-graph TD;
-    ENVIRONMENT-->PHOTOVOLTAIC
-    PHOTOVOLTAIC-->MPPT/INVERTER
-    MPPT/INVERTER-->LOAD
+flowchart
+    ENV(Environment)
+    SRC(Source)
+    CONV(Converter)
+    CONT(Controller)
+    LOAD(Load)
+    ANA([Analysis])
 
-    CONTROL_ALGORITHMS--->MPPT/INVERTER
+    ENV--->SRC
+    SRC-->CONV
+    CONT<---->CONV
+    LOAD-->CONV
 
-    ENVIRONMENT----->POWER_ANALYSIS
-    PHOTOVOLTAIC---->POWER_ANALYSIS
-    MPPT/INVERTER--->POWER_ANALYSIS
-    LOAD-->POWER_ANALYSIS
+    ENV----->ANA
+    SRC---->ANA
+    CONV--->ANA
+    LOAD-->ANA
+```
+
+---
+
+## Low Level Overview
+
+```mermaid
+flowchart
+  subgraph Environment
+  ENV(Environment)
+  end
+
+  subgraph Source
+  PV(PV System)
+  CEL(Cell)
+  3CEL(Three Param)
+  5CEL(Five Param)
+  DIO(Diode)
+  MOD(Module)
+  PAN(Panel)
+  end
+
+  subgraph Converter
+  SEN(Sensor)
+  CON(Controller)
+  ACT(Actuator)
+  PRO(Process)
+  end
+
+  subgraph Load
+  LEAD(Lead Acid)
+  LNMC(LiNiMnCo)
+  LION(Lithium Ion)
+  BATT(Battery System)
+  end
+
+  subgraph Controller Algorithms
+  MPPT(MPPT)
+  SUBL(Sublocal)
+  LOCL(Local)
+  GLOB(Global)
+  end
+
+  ENV   -->     PV
+  3CEL  -->     CEL
+  5CEL  -->     CEL
+  CEL   -->     MOD
+  DIO   -->     MOD
+  MOD   -->     PAN
+  CEL   -->     PV
+  MOD   -->     PV
+  PAN   -->     PV
+
+  LEAD  -->     BATT
+  LNMC  -->     BATT
+  LION  -->     BATT
+
+  PV    -->     SEN
+  BATT  ------->     SEN
+  SEN   -->     CON
+  CON   -->     ACT
+  ACT   -->     PRO
+  PRO   -->     SEN
+
+  SUBL  -->     LOCL
+  LOCL  -->     GLOB
+  LOCL  -->     MPPT
+  GLOB  -->     MPPT
+  MPPT  -->     CON
+
+  subgraph Analysis
+  STAB(Stability)
+  EFF(Efficiency)
+  POW(Power)
+  end
+
+  ENV   -->     POW
+  PV    -->     POW
+  BATT  -->     POW
+  CON   -->     EFF
+  PRO   -->     STAB
 ```

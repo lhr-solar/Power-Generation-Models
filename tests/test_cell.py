@@ -10,14 +10,10 @@ import sys
 
 sys.path.extend(["."])
 
-from environment.environment import Environment
 from pv.cell.cell import Cell
 
 
 def test_cell_get_pos():
-    env = Environment()
-    env.add_voxel(0, 0, 0, 1000, 273.15)
-
     params = {}
-    cell = Cell(env=env, params=params)
+    cell = Cell(params=params)
     assert cell.get_pos() == [[0, 0]]

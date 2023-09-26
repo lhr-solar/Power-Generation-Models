@@ -20,38 +20,34 @@ in the module and likewise for modules in a panel.
 
 ## API
 
-```python
-def __init__(filepath: str, hierarchy: str) -> None
-def load_pv(filepath: str) -> None
-def save_pv(filepath: str) -> None
+The photovoltaics shall be able to:
 
-# Building and adjusting the photovoltaic.
-# Only one of these is accessible after setting the hierarchy.
-def add_cell(id: int, cell: Cell, X: int, Y: int) -> bool
-def add_module(id: int, module: Module, X: int, Y: int) -> bool
-def add_string(id: int, string: String, X: int, Y: int) -> bool
-def rem_item(id: int) -> bool
-def set_item_position(id: int, X: int, Y: int) -> None
-def set_pv_position(X: int, Y: int) -> None
-
-# Running the models and extracting the result.
-def get_item_current(id: int, item_voltage: float, env: Environment, time: int) -> float
-def get_item_iv(id: int, env: Environment, time: int) -> [float, float]
-def get_item_edge(id: int, env: Environment, time: int) -> (float, float), (float, float), float
-def get_pv_current(pv_voltage: float, env: Environment, time: int) -> float
-def get_pv_iv(env: Environment, time: int) -> [float, float]
-def get_pv_edge(env: Environment, time: int) -> (float, float), (float, float), float
-
-# Model fit.
-# def load_data(filepath: str, raw_data: pd.DataFrame) -> None
-# def norm_data()
-# def fit_parameters()
-# def get_parameters()
-
-# Visualization
-def vis_item(id: int, env: Environment, time_range: [int, int]) -> None
-def vis_pv(env: Environment, time_range: [int, int]) -> None
-```
+- Define a set of parameters that may be used for modeling; these parameters are
+  split into **reference parameters** and **fitting parameters**.
+  - Reference parameters are measured and provided by the designer. They may
+    include things like known exposed irradiance or manufacturer provided open
+    circuit voltage.
+  - Fitting parameters are analytically derived from the model. They are
+    experimental values and may vary between individual PVs.
+- Be assigned to an environmental model: the PV may move around in the space or
+  canvas that is represented by voxels in the environment, and the output of the
+  PV is dependent on the voxel(s) that is associated with the PV component.
+  There is only one Environment instance.
+- Solve for a PV current given voltage and vice versa. We assume that all
+  devices sans bypass diodes are in series: this means that it is easier to
+  derive voltage from current than vice versa. However, we can use the relative
+  resolution of the model to interpolate current from the voltage after
+  generating an I-V curve.
+- Generate derivations of the current given voltage; this includes the full I-V
+  curve and edge characteristics, including maximum power point and effective
+  open circuit voltage/short circuit current.
+- Load and save a file representing the PV. This includes values for fitting
+  parameters. 
+- Load and preprocess a data file representing experimental data at some known
+  set of reference parameters. From this data file, we shall be able to perform
+  best fit algorithms to optimize fitting parameters.
+- Visualize the PV (discrete or whole) I-V curves and key points over time and
+  across various conditions. The user should specify these conditions.
 
 ---
 
@@ -90,6 +86,11 @@ operation. Modules also have a reverse biased bypass diode in parallel with the
 set of cells; this diode retains its own model and is calculated against the
 module I-V curve.
 
+Current applied through a solar module is checked against the resultant voltage
+across the module. If this is driven into the 2nd quadrant (negative voltage,
+positive current), then the bypass diode is turned on, distributing current
+until the voltage across both devices (cells and bypass diode) are equivalent.
+
 ### Solar Cell Set Model
 
 ### Bypass Diode Models
@@ -99,10 +100,6 @@ module I-V curve.
 ## Solar Panel Model
 
 The solar panel model is the largest model and consists of solar modules in
-series.
-
----
-
-## Interaction with the Environment
-
-The environment is 
+series. The only addition to this model is the inclusion of lead resistance,
+which a linear voltage drop in proportion to the current driven through the
+panel.
