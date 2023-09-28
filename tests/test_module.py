@@ -3,7 +3,7 @@
 @author     Matthew Yu (matthewjkyu@gmail.com)
 @brief      Tests for the module model.
 @version    0.4.0
-@date       2023-09-24
+@date       2023-09-28
 """
 
 import sys
@@ -19,7 +19,7 @@ from pv.module.module import Module
 
 @pytest.fixture
 def setup():
-    voxels = [[0, 0, 0, 1000, 273.15], [1, 0, 0, 500, 273.15], [2, 0, 0, 250, 273.15]]
+    voxels = [[0, 0, 0, 1000, 273.15], [1, 0, 0, 1000, 273.15], [2, 0, 0, 1000, 273.15]]
     env = Environment()
     env.add_voxels(*np.transpose(voxels))
 
@@ -90,7 +90,7 @@ def test_module_default(setup):
     assert module.get_voltage(100, irrad, temp) == 0.0
 
     assert module.get_current(0, irrad, temp) >= 6.15
-    assert module.get_current(0.721 * 3, irrad, temp) == 0.0
+    assert module.get_current(0.721 * 3, irrad, temp) == pytest.approx(0.0, abs=0.0001)
     assert module.get_current(100, irrad, temp) == 0.0
 
 

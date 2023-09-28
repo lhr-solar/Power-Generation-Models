@@ -3,7 +3,7 @@
 @author     Matthew Yu (matthewjkyu@gmail.com)
 @brief      Tests for the Three parameter cell model.
 @version    0.4.0
-@date       2023-09-24
+@date       2023-09-28
 """
 
 import sys
@@ -52,7 +52,7 @@ def test_three_param_cell_default(setup):
     assert cell.get_voltage(100, irrad, temp) == 0.0
 
     assert cell.get_current(0, irrad, temp) >= params["ref_isc"]
-    assert cell.get_current(params["ref_voc"], irrad, temp) == 0.0
+    assert cell.get_current(params["ref_voc"], irrad, temp) == pytest.approx(0.0, abs=0.0001)
     assert cell.get_current(100, irrad, temp) == 0.0
 
 

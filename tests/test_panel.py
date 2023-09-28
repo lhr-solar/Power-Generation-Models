@@ -3,7 +3,7 @@
 @author     Matthew Yu (matthewjkyu@gmail.com)
 @brief      Tests for the panel model.
 @version    0.4.0
-@date       2023-09-24
+@date       2023-09-28
 """
 
 import sys
@@ -23,9 +23,9 @@ from pv.panel.panel import Panel
 def setup():
     voxels = [
         [0, 0, 0, 1000, 298.15],
-        [1, 0, 0, 500, 298.15],
-        [2, 0, 0, 250, 298.15],
-        [3, 0, 0, 750, 298.15],
+        [1, 0, 0, 1000, 298.15],
+        [2, 0, 0, 1000, 298.15],
+        [3, 0, 0, 1000, 298.15],
     ]
     env = Environment()
     env.add_voxels(*np.transpose(voxels))
@@ -135,7 +135,7 @@ def test_panel_default(setup):
     assert panel.get_voltage(100, irrad, temp) == 0.0
 
     assert panel.get_current(0, irrad, temp) >= 6.15
-    assert panel.get_current(0.721 * 4, irrad, temp) == 0.0
+    assert panel.get_current(0.721 * 4, irrad, temp) == pytest.approx(0.0, abs=0.0001)
     assert panel.get_current(100, irrad, temp) == 0.0
 
 

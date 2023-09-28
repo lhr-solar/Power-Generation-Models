@@ -7,6 +7,7 @@
 """
 
 from pv.pv import PV
+import numpy as np
 
 
 class Panel(PV):
@@ -29,6 +30,19 @@ class Panel(PV):
         v -= current * self._params["fit_lead_resistance"]
 
         return v
+    
+    def get_current(
+        self, voltage: float, irrad: list[float], temp: list[float]
+    ) -> float:
+        # Cheat and grab from IV curve. Current from voltage can be derived in
+        # O(N), while voltage directly is O(N^N).
+        iv = self.get_iv(irrad, temp)
+        volt, curr, _ = np.transpose(iv)
+        curr = np.interp(voltage, volt, curr)
+
+        # TODO: diode contribution.
+
+        return curr
 
     def get_pos(self) -> list([int, int]):
         pos = []

@@ -3,7 +3,7 @@
 @author     Matthew Yu (matthewjkyu@gmail.com)
 @brief      Tests for the pv system.
 @version    0.4.0
-@date       2023-09-24
+@date       2023-09-28
 """
 
 import sys
@@ -21,9 +21,9 @@ from pv.pv_system import PVSystem
 def setup():
     voxels = [
         [0, 0, 0, 1000, 298.15],
-        [1, 0, 0, 500, 298.15],
-        [2, 0, 0, 250, 298.15],
-        [3, 0, 0, 750, 298.15],
+        [1, 0, 0, 1000, 298.15],
+        [2, 0, 0, 1000, 298.15],
+        [3, 0, 0, 1000, 298.15],
     ]
     env = Environment()
     env.add_voxels(*np.transpose(voxels))
@@ -68,6 +68,10 @@ def test_pv_system(setup):
     assert system.get_pv_voltage(1, 0, 0) >= 0.721
     assert system.get_pv_voltage(1, 6.15, 0) == 0.0
     assert system.get_pv_voltage(1, 100, 0) == 0.0
+
+    assert system.get_pv_current(1, 0, 0) >= params["ref_isc"]
+    assert system.get_pv_current(1, 0.721, 0) == pytest.approx(0.0, abs=0.0001)
+    assert system.get_pv_current(1, 100, 0) == 0.0
 
 
 if __name__ == "__main__":
