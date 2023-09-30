@@ -5,9 +5,12 @@
 @version    0.4.0
 @date       2023-09-28
 """
-from pv.cell.cell import Cell
-from scipy import constants
 import math as m
+
+from scipy import constants
+
+from pv.cell.cell import Cell
+
 
 class ThreeParamCell(Cell):
     def __init__(self, params: dict, data_fp=None) -> None:
@@ -30,9 +33,11 @@ class ThreeParamCell(Cell):
         ref_i_sc = self._params["ref_isc"]
 
         # Curve Fitting parameters
-        fit_n = self._params["fit_ideality_factor"]
+        fit_n1 = self._params["fit_fwd_ideality_factor"]
+        fit_n2 = self._params["fit_rev_ideality_factor"]
+        fit_i_d = self._params["fit_rev_sat_curr"]
 
-        if fit_n == 0.0:
+        if fit_n1 == 0.0 or fit_n2 == 0.0:
             raise Exception("Cell ideality factor is too low!")
 
         i_l = current
@@ -42,26 +47,20 @@ class ThreeParamCell(Cell):
         k_b = constants.k
         q = constants.e
 
-        v_t = fit_n * k_b * t_c / q
+        v_t = k_b * t_c / q
         i_sc = ref_i_sc * g / ref_g
 
         # Add 0.00001 for satisfying the domain condition when g/ref_g = 0.
-        v_oc = ref_v_oc + v_t * m.log((g / ref_g) + 0.00001)
+        v_oc = ref_v_oc + fit_n1 * v_t * m.log((g / ref_g) + 0.00001)
 
-        if 1 - i_l / i_sc <= 0:
-            # Domain assumption that our load current cannot be greater than our
-            # short circuit current: this implies that the diode current is
-            # negative and contributes to the system instead of taking from it.
+        if i_l <= i_sc - 1 * 10**-10:
+            v_l = (fit_n1 * v_t) * m.log(
+                (1 - i_l / i_sc) * (m.exp(v_oc / (fit_n1 * v_t)) - 1)
+            )
+        else:
+            v_l = -m.log((i_l - i_sc) / fit_i_d + 1) * fit_n2 * v_t
 
-            # Likewise, assume that our load current cannot be equal to our
-            # short circuit current: this implies that there is no
-            # dark/saturation diode contribution at all.
-            return 0.0
-
-        v_l = v_t * m.log((1 - i_l / i_sc) * (m.exp(v_oc / v_t) - 1))
         return v_l
-
-        # return get_voltage(ref_g, ref_v_oc, ref_i_sc, fit_n, i_l, g, t)
 
     def get_current(
         self, voltage: float, irrad: list[float], temp: list[float]
@@ -80,9 +79,11 @@ class ThreeParamCell(Cell):
         ref_i_sc = self._params["ref_isc"]
 
         # Curve Fitting parameters
-        fit_n = self._params["fit_ideality_factor"]
+        fit_n1 = self._params["fit_fwd_ideality_factor"]
+        fit_n2 = self._params["fit_rev_ideality_factor"]
+        fit_i_d = self._params["fit_rev_sat_curr"]
 
-        if fit_n == 0.0:
+        if fit_n1 == 0.0 or fit_n2 == 0.0:
             raise Exception("Cell ideality factor is too low!")
 
         v_l = voltage
@@ -92,19 +93,26 @@ class ThreeParamCell(Cell):
         k_b = constants.k
         q = constants.e
 
-        v_t = fit_n * k_b * t_c / q
+        v_t = k_b * t_c / q
         i_sc = ref_i_sc * g / ref_g
 
         # Add 0.00001 for satisfying the domain condition when g/ref_g = 0.
         v_oc = ref_v_oc + v_t * m.log((g / ref_g) + 0.00001)
 
-        if v_l / v_t > 100:
-            # Domain assumption that our load voltage cannot be well past open
-            # circuit voltage: the ratio of load voltage versus thermal voltage
-            # can overfill the exponential term.
-            return 0.0
-        
-        i_l = i_sc * (1 - (m.exp(v_l / v_t) - 1) / (m.exp(v_oc / v_t) - 1))
+        if v_l > 0.0:
+            if v_l / v_t > 100:
+                # Domain assumption that our load voltage cannot be well past open
+                # circuit voltage: the ratio of load voltage versus thermal voltage
+                # can overfill the exponential term.
+                return 0.0
+
+            i_l = i_sc * (
+                1
+                - (m.exp(v_l / (fit_n1 * v_t)) - 1) / (m.exp(v_oc / (fit_n1 * v_t)) - 1)
+            )
+        else:
+            i_l = i_sc  # fit_i_d * (m.exp(-v_l / (fit_n2 * v_t)) - 1) + i_sc
+
         return i_l
 
     def fit_parameters(

@@ -12,6 +12,7 @@ sys.path.extend(["."])
 
 import numpy as np
 import pytest
+
 from environment.environment import Environment
 from pv.cell.three_param_cell import ThreeParamCell
 from pv.pv_system import PVSystem

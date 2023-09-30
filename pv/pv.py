@@ -16,8 +16,8 @@ import pandas as pd
 from lmfit import Parameters, fit_report, minimize
 from PySide6 import QtWidgets
 
-from common.utils import normalize
 from common.graph import Graph
+from common.utils import normalize
 
 
 class PV:
@@ -77,7 +77,10 @@ class PV:
         raise NotImplementedError
 
     def get_iv(
-        self, irrad: list[float], temp: list[float]
+        self,
+        irrad: list[float],
+        temp: list[float],
+        curr_range: list[float] = [-10.0, 10.0],
     ) -> list[list[float, float, float]]:
         """Get the I-V curve of the instance for some specific irradiance and
         temperature as an array of points spaced by SAMPLE_RES.
@@ -94,7 +97,8 @@ class PV:
         """
         iv = []
 
-        curr = 0.0
+        curr = curr_range[0]
+        bound_curr = 0.0
         res = 0.1
         loop = 0
         num_loops = 3
@@ -102,7 +106,13 @@ class PV:
             # Increment resolution decreases by (0.05)^n
             volt = self.get_voltage(curr, irrad, temp)
             iv.append([volt, curr, volt * curr])
-            if volt == 0.0:
+
+            if volt < 0.0 and bound_curr == 0.0:
+                # Capture Y axis boundary condition; this is where the IV curve
+                # is the most flat and needs more resolution.
+                bound_curr = curr
+
+            if curr > curr_range[1]:
                 # https://www.desmos.com/calculator/mffm3b9ucm
                 # Set x=num_loops and adjust a, b, z to meet requirements
                 # - z: I_SC of typical cell
@@ -110,7 +120,7 @@ class PV:
                 #   typical I-V curve
                 # - b: Adjust such that at X=num_loops the curve is barely under
                 #   it (<0.1).
-                new_curr = curr * (0.5 + m.log(loop + 1) * 0.45)
+                new_curr = bound_curr * (0.5 + m.log(loop + 1) * 0.45)
                 res = res / 3
                 curr = new_curr
                 loop += 1
@@ -118,7 +128,7 @@ class PV:
             curr += res
 
         # Normalize data.
-        iv = normalize(np.array(iv))
+        iv = normalize(np.array(iv), 100)
 
         return iv
 
@@ -141,6 +151,8 @@ class PV:
         iv = self.get_iv(irrad, temp)
         df = pd.DataFrame(iv, columns=["Voltage (V)", "Current (A)", "Power (W)"])
 
+        df = df[(df["Voltage (V)"] >= 0.0) & (df["Current (A)"] >= 0.0)]
+
         v_oc = df.nlargest(1, "Voltage (V)").iloc[0]["Voltage (V)"]
         i_sc = df.nlargest(1, "Current (A)").iloc[0]["Current (A)"]
 
@@ -150,7 +162,12 @@ class PV:
 
         return (v_oc, i_sc), (v_mpp, i_mpp)
 
-    def vis(self, irrad: list[float], temp: list[float]) -> None:
+    def vis(
+        self,
+        irrad: list[float],
+        temp: list[float],
+        curr_range: list[float] = [-10.0, 10.0],
+    ) -> None:
         """
         TODO: documentation, support for:
         - displaying experimental data
@@ -170,7 +187,7 @@ class PV:
         container.setLayout(container_layout)
 
         # Create graphs
-        data = self.get_iv(irrad, temp)
+        data = self.get_iv(irrad, temp, curr_range)
         data = np.transpose(data)
 
         # Populate graph
@@ -192,7 +209,7 @@ class PV:
             "scatter",
         )
         graph["widget"] = graph["instance"].get_graph()
-        # graph["instance"].set_graph_range([0, 0.8], [0, 6.5])
+        # graph["instance"].set_graph_range([-0.7, 1.0], [-10, 10])
 
         container_layout.addWidget(graph["widget"], *graph["position"])
 

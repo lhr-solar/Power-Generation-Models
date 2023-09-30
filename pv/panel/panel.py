@@ -6,8 +6,9 @@
 @date       2023-09-24
 """
 
-from pv.pv import PV
 import numpy as np
+
+from pv.pv import PV
 
 
 class Panel(PV):
@@ -30,7 +31,7 @@ class Panel(PV):
         v -= current * self._params["fit_lead_resistance"]
 
         return v
-    
+
     def get_current(
         self, voltage: float, irrad: list[float], temp: list[float]
     ) -> float:
@@ -40,8 +41,7 @@ class Panel(PV):
         volt, curr, _ = np.transpose(iv)
         curr = np.interp(voltage, volt, curr)
 
-        # TODO: diode contribution.
-
+        # Lead contribution derived from get_voltage downstream call.
         return curr
 
     def get_pos(self) -> list([int, int]):

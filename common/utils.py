@@ -7,9 +7,8 @@
 """
 
 import collections.abc
+
 import numpy as np
-import math as m
-from scipy.interpolate import interp1d as scipy_interp1d
 
 
 def update(d, u):
@@ -55,11 +54,10 @@ def normalize(data, num_points=100):
 
     # Generate interpolate function
     volt, curr, _ = np.transpose(data)
-    f_interp = scipy_interp1d(volt, curr, kind="slinear")
 
     # Interpolate across the space in even increments.
     volts = np.linspace(np.min(volt), np.max(volt), num=num_points)
-    curr = f_interp(volts)
+    curr = np.interp(volts, volt, curr)
     pow = volts * curr
 
     # Sort and reform data.

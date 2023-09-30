@@ -11,6 +11,7 @@ import sys
 sys.path.extend(["."])
 
 import pytest
+
 from environment.environment import Environment
 from pv.cell.three_param_cell import ThreeParamCell
 
@@ -27,7 +28,9 @@ def setup():
         "ref_temp": 298.15,  # Kelvin
         "ref_voc": 0.721,  # Volts
         "ref_isc": 6.15,  # Amps
-        "fit_ideality_factor": 1.0,
+        "fit_fwd_ideality_factor": 2,
+        "fit_rev_ideality_factor": 1,
+        "fit_rev_sat_curr": 1 * 10**-5,
     }
 
     time_idx = 0
@@ -47,13 +50,21 @@ def test_three_param_cell_default(setup):
         irrad.append(g)
         temp.append(t)
 
+    # At 0 A, we should be at VOC at STC.
     assert cell.get_voltage(0, irrad, temp) >= params["ref_voc"]
+    # At ISC, we should be at 0 V at STC.
     assert cell.get_voltage(params["ref_isc"], irrad, temp) == 0.0
-    assert cell.get_voltage(100, irrad, temp) == 0.0
+    # At very large current, we should be in quadrant II and negative voltage at STC.
+    assert cell.get_voltage(params["ref_isc"] * 1.5, irrad, temp) < 0.0
 
+    # At 0 V, we should be at ISC at STC.
     assert cell.get_current(0, irrad, temp) >= params["ref_isc"]
-    assert cell.get_current(params["ref_voc"], irrad, temp) == pytest.approx(0.0, abs=0.0001)
-    assert cell.get_current(100, irrad, temp) == 0.0
+    # At VOC, we should be at 0 A at STC.
+    assert cell.get_current(params["ref_voc"], irrad, temp) == pytest.approx(
+        0.0, abs=0.0001
+    )
+    # At very large voltage, we should be in quadrant IV and negative current at STC.
+    assert cell.get_current(params["ref_voc"] * 1.5, irrad, temp) < 0.0
 
 
 def test_three_param_cell_fit_data():
@@ -71,7 +82,9 @@ if __name__ == "__main__":
         "ref_temp": 298.15,  # Kelvin
         "ref_voc": 0.721,  # Volts
         "ref_isc": 6.15,  # Amps
-        "fit_ideality_factor": 2.0,
+        "fit_fwd_ideality_factor": 1.294,
+        "fit_rev_ideality_factor": 1,
+        "fit_rev_sat_curr": 1 * 10**-5,
     }
 
     time_idx = 0
@@ -85,5 +98,10 @@ if __name__ == "__main__":
         irrad.append(g)
         temp.append(t)
 
-    # print(cell.get_edge(irrad, temp))
-    cell.vis(irrad, temp)
+    edge, mpp = cell.get_edge(irrad, temp)
+    pmpp = mpp[0] * mpp[1]
+    pedge = edge[0] * edge[1]
+    ff = pmpp / pedge
+    print(pmpp, pedge, ff, edge, mpp)
+
+    cell.vis(irrad, temp, curr_range=[-10, 10])
