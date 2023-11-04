@@ -13,7 +13,7 @@ sys.path.extend(["."])
 from pv.cell.cell import Cell
 
 
-def test_cell_get_pos():
+def test_pos():
     params = {}
     cell = Cell(params=params)
     assert cell.get_pos() == [[0, 0]]

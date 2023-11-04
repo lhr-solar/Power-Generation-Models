@@ -69,7 +69,6 @@ class Graph:
             series["graph"] = plot_item
 
     def update_series(self, series) -> None:
-        # TODO: API breaking change for whatever reason.
         self.series = update(self.series, series)
         keys = list(series.keys())
 

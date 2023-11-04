@@ -60,7 +60,7 @@ class Environment:
             filepath (str): Path of file to save/overwrite.
         """
         self.get_voxels()
-        self.df.to_csv(filepath, index=None)
+        self.df.to_csv(filepath, index=None, float_format="%.3f")
 
     def add_voxel(self, X: int, Y: int, T: int, irrad: float, temp: float) -> None:
         """Add a voxel to our current environment.

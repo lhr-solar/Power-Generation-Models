@@ -23,18 +23,12 @@ class Module(PV):
     def _get_cell_voltage(
         self, current: float, irrad: list[float], temp: list[float]
     ) -> float:
+        """It is O(n), n being the number of solar cells in the module, to
+        derive the total module (cells in series) voltage with the current
+        through each cell."""
         voltage = 0
         for cell, _irrad, _temp in zip(self._params["cells"].values(), irrad, temp):
             voltage += cell["instance"].get_voltage(current, [_irrad], [_temp])
-
-        return voltage
-    
-    def _get_diode_voltage(
-        self, current: float, irrad: list[float], temp: list[float]
-    ) -> float:
-        voltage = self._params["diode"]["instance"].get_voltage(
-            current, [np.average(irrad)], [np.average(temp)]
-        )
 
         return voltage
 
@@ -43,7 +37,14 @@ class Module(PV):
         irrad: list[float],
         temp: list[float],
         curr_range: list[float] = [-10.0, 10.0],
+        volt_range: list[float] = [-10.0, 10.0],
     ) -> list[list[float, float, float]]:
+        def calc(curr):
+            volt = self._get_cell_voltage(curr, irrad, temp)
+            return volt, curr, volt * curr
+
+        iv = [calc(curr) for curr in np.linspace(*curr_range, self.IV_POINTS)]
+
         if (
             self._cell_cache_iv[1] == irrad
             and self._cell_cache_iv[2] == temp
@@ -51,127 +52,46 @@ class Module(PV):
         ):
             return self._cell_cache_iv[0]
 
-        iv = []
-
-        curr = curr_range[0]
-        bound_curr = 0.0
-        res = 0.1
-        loop = 0
-        num_loops = 3
-        while loop < num_loops:
-            # Increment resolution decreases by (0.05)^n
-            volt = self._get_cell_voltage(curr, irrad, temp)
-            iv.append([volt, curr, volt * curr])
-
-            if volt < 0.0 and bound_curr == 0.0:
-                # Capture Y axis boundary condition; this is where the IV curve
-                # is the most flat and needs more resolution.
-                bound_curr = curr
-
-            if curr > curr_range[1]:
-                # https://www.desmos.com/calculator/mffm3b9ucm
-                # Set x=num_loops and adjust a, b, z to meet requirements
-                # - z: I_SC of typical cell
-                # - a: Starting proportion of Z, set to right side of knee of
-                #   typical I-V curve
-                # - b: Adjust such that at X=num_loops the curve is barely under
-                #   it (<0.1).
-                new_curr = bound_curr * (0.5 + m.log(loop + 1) * 0.45)
-                res = res / 3
-                curr = new_curr
-                loop += 1
-
-            curr += res
-
         # Normalize data.
-        iv = normalize(np.array(iv), 500)
+        iv = normalize(np.array(iv), self.IV_NORM_POINTS)
 
         self._cell_cache_iv = [iv, irrad, temp, curr_range]
 
         return iv
 
-    def _get_diode_iv(
-        self,
-        irrad: list[float],
-        temp: list[float],
-        curr_range: list[float] = [-10.0, 10.0],
-    ) -> list[list[float, float, float]]:
-        if (
-            self._diode_cache_iv[1] == irrad
-            and self._diode_cache_iv[2] == temp
-            and self._diode_cache_iv[3] == curr_range
-        ):
-            return self._diode_cache_iv[0]
+    def get_voltage(self, current: float, irrad: list[float], temp: list[float]):
+        # Cheat and grab from IV curve. Current from voltage can be derived in
+        # O(N), while voltage directly is O(N^N).
+        c_iv = self._get_cell_iv(irrad, temp)
+        c_volt, c_curr, c_pow = np.transpose(c_iv)
+        c_vi = np.transpose([c_curr, c_volt, c_pow])
+        c_vi = normalize(c_vi, 500)
+        c_curr_t, c_volt_t, c_pow_t = np.transpose(c_vi)
 
-        iv = []
+        # Derive initial estimate assuming no contribution from diode.
+        m_volt_est = np.interp(current, c_curr_t, c_volt_t)
 
-        curr = curr_range[0]
-        bound_curr = 0.0
-        res = 0.1
-        loop = 0
-        num_loops = 3
-        while loop < num_loops:
-            # Increment resolution decreases by (0.05)^n
-            volt = self._get_diode_voltage(curr, irrad, temp)
-            iv.append([volt, curr, volt * curr])
-
-            if volt < 0.0 and bound_curr == 0.0:
-                # Capture Y axis boundary condition; this is where the IV curve
-                # is the most flat and needs more resolution.
-                bound_curr = curr
-
-            if curr > curr_range[1]:
-                # https://www.desmos.com/calculator/mffm3b9ucm
-                # Set x=num_loops and adjust a, b, z to meet requirements
-                # - z: I_SC of typical cell
-                # - a: Starting proportion of Z, set to right side of knee of
-                #   typical I-V curve
-                # - b: Adjust such that at X=num_loops the curve is barely under
-                #   it (<0.1).
-                new_curr = bound_curr * (0.5 + m.log(loop + 1) * 0.45)
-                res = res / 3
-                curr = new_curr
-                loop += 1
-
-            curr += res
-
-        # Normalize data.
-        iv = normalize(np.array(iv), 500)
-
-        self._diode_cache_iv = [iv, irrad, temp, curr_range]
-
-        return iv
-
-    def get_voltage(
-        self, current: float, irrad: list[float], temp: list[float]
-    ) -> float:
-        voltage = self._get_cell_voltage(current, irrad, temp)
-        if voltage >= 0.0:
-            return voltage
-
-        # Constraints:
-        # I_L = I_PV + I_D
-        # 0 = V_PV(I_PV) - V_D(I_D)
-        i_c = current 
-        i_d = 0
         is_fwd = False
         while True:
-            v_c = self._get_cell_voltage(i_c, irrad, temp)
-            # Diode is antiparallel; increasing current is decreasing voltage.
-            v_d = -self._get_diode_voltage(i_d, irrad, temp)
-            # if m.isclose(v_d, v_c, abs_tol=0.005):
-                # return v_c
-            if v_c > v_d:
+            # Given module voltage estimate, derive current components.
+            m_curr_est = np.interp(m_volt_est, c_volt, c_curr) + self._params["diode"][
+                "instance"
+            ].get_current(-m_volt_est, [np.average(irrad)], [np.average(temp)])
+            if m.isclose(m_curr_est, current, abs_tol=0.001):
+                break
+            if m_curr_est > current:
                 is_fwd = True
-                # v_pv needs to decrease, increase current
-                i_c += 0.001
-                i_d = current - i_c
+
+                # Current too high; increase module voltage.
+                m_volt_est += 0.001
             else:
                 if is_fwd:
-                    return v_c
-                # v_pv needs to increase, decrease current
-                i_c -= 0.001
-                i_d = current - i_c
+                    # Toggled, exit early.
+                    break
+                # Current too low; decrease module voltage.
+                m_volt_est -= 0.001
+
+        return m_volt_est
 
     def get_current(
         self, voltage: float, irrad: list[float], temp: list[float]
@@ -180,13 +100,40 @@ class Module(PV):
         # O(N), while voltage directly is O(N^N).
         c_iv = self._get_cell_iv(irrad, temp)
         c_volt, c_curr, _ = np.transpose(c_iv)
-        
-        # Diode contribution.        
-        m_curr = np.interp(voltage, c_volt, c_curr) - self._params["diode"]["instance"].get_current(
-            -voltage, [np.average(irrad)], [np.average(temp)]
-        )
+
+        # Diode contribution.
+        m_curr = np.interp(voltage, c_volt, c_curr) + self._params["diode"][
+            "instance"
+        ].get_current(-voltage, [np.average(irrad)], [np.average(temp)])
 
         return m_curr
+
+    def get_iv(
+        self,
+        irrad: list[float],
+        temp: list[float],
+        curr_range: list[float] = [-10.0, 10.0],
+        volt_range: list[float] = [-10.0, 10.0],
+    ) -> list[list[float, float, float]]:
+        # For module level, it's easier to sweep voltage than current.
+        iv = []
+        c_iv = self._get_cell_iv(irrad, temp, curr_range, volt_range)
+
+        for c_volt, c_curr, _ in c_iv:
+            d_curr = self._params["diode"]["instance"].get_current(
+                -c_volt, [np.average(irrad)], [np.average(temp)]
+            )
+            m_curr = c_curr + d_curr
+            m_pow = c_volt * m_curr
+            if (
+                curr_range[0] <= m_curr
+                and m_curr <= curr_range[1]
+                and volt_range[0] <= c_volt
+                and c_volt <= volt_range[1]
+            ):
+                iv.append([c_volt, m_curr, m_pow])
+
+        return iv
 
     def get_pos(self) -> list([int, int]):
         pos = []

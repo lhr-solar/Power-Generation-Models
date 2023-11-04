@@ -9,6 +9,7 @@
 import numpy as np
 
 from pv.pv import PV
+from common.utils import normalize
 
 
 class Panel(PV):
@@ -43,6 +44,23 @@ class Panel(PV):
 
         # Lead contribution derived from get_voltage downstream call.
         return curr
+
+    def get_iv(
+        self,
+        irrad: list[float],
+        temp: list[float],
+        curr_range: list[float] = [-10.0, 10.0],
+        volt_range: list[float] = [-10.0, 10.0],
+    ) -> list[list[float, float, float]]:
+        def calc(curr):
+            volt = self.get_voltage(curr, irrad, temp)
+            return volt, curr, volt * curr
+
+        iv = [calc(curr) for curr in np.linspace(*curr_range, self.IV_POINTS)]
+
+        # Normalize data.
+        iv = normalize(np.array(iv), self.IV_NORM_POINTS)
+        return iv
 
     def get_pos(self) -> list([int, int]):
         pos = []

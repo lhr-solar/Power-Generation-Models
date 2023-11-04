@@ -11,9 +11,12 @@ import sys
 sys.path.extend(["."])
 
 import pytest
+import numpy as np
 
 from environment.environment import Environment
 from pv.cell.three_param_cell import ThreeParamCell
+from common.graph import Graph
+from PySide6 import QtWidgets
 
 
 @pytest.fixture
@@ -38,7 +41,7 @@ def setup():
     yield env, params, time_idx
 
 
-def test_three_param_cell_default(setup):
+def test_sanity(setup):
     env, params, time_idx = setup
 
     cell = ThreeParamCell(params=params)
@@ -53,7 +56,9 @@ def test_three_param_cell_default(setup):
     # At 0 A, we should be at VOC at STC.
     assert cell.get_voltage(0, irrad, temp) >= params["ref_voc"]
     # At ISC, we should be at 0 V at STC.
-    assert cell.get_voltage(params["ref_isc"], irrad, temp) == 0.0
+    assert cell.get_voltage(params["ref_isc"], irrad, temp) == pytest.approx(
+        0.0, abs=0.0001
+    )
     # At very large current, we should be in quadrant II and negative voltage at STC.
     assert cell.get_voltage(params["ref_isc"] * 1.5, irrad, temp) < 0.0
 
@@ -67,8 +72,43 @@ def test_three_param_cell_default(setup):
     assert cell.get_current(params["ref_voc"] * 1.5, irrad, temp) < 0.0
 
 
-def test_three_param_cell_fit_data():
-    raise NotImplementedError
+def test_equiv(setup):
+    """Assert that the two methods of deriving the model are within 5% of each
+    other."""
+    env, params, time_idx = setup
+
+    cell = ThreeParamCell(params=params)
+    irrad = []
+    temp = []
+    pos = cell.get_pos()
+    for p in pos:
+        g, t = env.get_voxel(*p, time_idx)
+        irrad.append(g)
+        temp.append(t)
+
+    for volt in np.linspace(-params["ref_voc"], params["ref_voc"] * 1.5, 100):
+        curr = cell.get_current(volt, irrad, temp)
+        volt2 = cell.get_voltage(curr, irrad, temp)
+        # Edge case where functions diverge or break down near zero (due to
+        # flatness of IV at this point).
+        if 0 < volt and volt < 0.1:
+            assert volt2 == pytest.approx(volt, abs=0.1)
+        else:
+            assert volt2 == pytest.approx(volt, rel=0.05)
+
+    for curr in np.linspace(-params["ref_isc"], params["ref_isc"] * 1.5, 100):
+        volt = cell.get_voltage(curr, irrad, temp)
+        curr2 = cell.get_current(volt, irrad, temp)
+        assert curr2 == pytest.approx(curr, rel=0.05)
+
+
+def test_fit_data(setup):
+    _, params, _ = setup
+
+    cell = ThreeParamCell(
+        params=params, data_fp="./tests/example_captures/example_cell.capture"
+    )
+    params = cell.fit_params(irradiance=1000, temperature=298.15)
 
 
 if __name__ == "__main__":
@@ -98,10 +138,4 @@ if __name__ == "__main__":
         irrad.append(g)
         temp.append(t)
 
-    edge, mpp = cell.get_edge(irrad, temp)
-    pmpp = mpp[0] * mpp[1]
-    pedge = edge[0] * edge[1]
-    ff = pmpp / pedge
-    print(pmpp, pedge, ff, edge, mpp)
-
-    cell.vis(irrad, temp, curr_range=[-10, 10])
+    cell.vis(irrad, temp, curr_range=[-10, 10], volt_range=[-0.4, 0.8])

@@ -2,6 +2,12 @@
 
 - [:sunny: Models - Modeling the Power Generation System.](#sunny-models---modeling-the-power-generation-system)
   - [Repository Structure](#repository-structure)
+  - [Maintainers](#maintainers)
+  - [Versioning](#versioning)
+  - [TODO](#todo)
+    - [Models](#models)
+      - [PV](#pv)
+      - [Converter](#converter)
 
 ---
 
@@ -45,4 +51,52 @@ versioning](https://semver.org/) to denote between versions. See the
 
 ## TODO
 
-### 
+### Models
+
+#### PV
+
+- [ ] pv
+  - [x] modify get_edge to support user specified current, voltage range.
+  - [ ] docs for vis
+  - [x] support supply experimental data overlay
+  - [x] support returning a widget
+  - [ ] support returning a sweep across external/internal parameters
+  - [ ] support multiple graphs
+  - [x] docs for _set_params_and_fit
+
+- panel/panel
+- pv_system
+
+#### Converter
+
+- [ ] sensor
+  - [ ] voltage sensor
+  - [ ] current sensor
+- [ ] controller
+  - [ ] mppt algorithms
+- [ ] actuator
+  - [ ] boost converter
+- [ ] process
+
+- three_param_cell
+  - test_sanity
+    - verify is reasonable
+  - test_equiv
+    - bug where get_current not equiv to get_voltage
+  - test_fit_data
+    - implement fit data, verify reasonable parameters generated against prior
+      data from data folder  
+  - main
+    - verify visualization for [-10, 10]A, [-1.0, 1.0]V.
+- bypass diode
+  - test_sanity
+    - verify is reasonable
+  - test_equiv
+    - verify for correctness
+  - test_fit_data
+    - implement fit data, no test data to use.
+  - main
+    - verify visualization for [-1, 1]A, [-0.5, 0.5]V.
+- module
+- panel
+- pv_system

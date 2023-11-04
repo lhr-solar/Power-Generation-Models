@@ -9,18 +9,19 @@ import sys
 
 sys.path.extend([".."])
 
-import math as m
-
 import numpy as np
 import pandas as pd
 from lmfit import Parameters, fit_report, minimize
 from PySide6 import QtWidgets
 
 from common.graph import Graph
-from common.utils import normalize
 
 
 class PV:
+    FIT_RESOLUTION = 1e7
+    IV_POINTS = 250
+    IV_NORM_POINTS = 1000
+
     def __init__(self, params: dict, data_fp=None) -> None:
         """Create a PV instance.
 
@@ -33,6 +34,20 @@ class PV:
         self._data = None
         if data_fp is not None:
             self._data = self.load_data(data_fp)
+
+    def load_data(self, data_fp: str) -> list[list[float, float, float]]:
+        """Load data file associated with the system.
+
+        Returns:
+            [[float, float, float]]: List of voltage, current, power pairs.
+        """
+        df = pd.read_csv(data_fp, header=9)
+        if "Voltage (V)" not in list(df) or "Current (A)" not in list(df):
+            raise Exception("Invalid file data descriptors.")
+        data = df.values.tolist()
+        if "Power (W)" not in list(df):
+            data = [[volt, curr, volt * curr] for volt, curr in data]
+        return data
 
     def get_pos(self) -> list[list[int, int]]:
         """Get the position of the PV constituents.
@@ -81,65 +96,37 @@ class PV:
         irrad: list[float],
         temp: list[float],
         curr_range: list[float] = [-10.0, 10.0],
+        volt_range: list[float] = [-10.0, 10.0],
     ) -> list[list[float, float, float]]:
         """Get the I-V curve of the instance for some specific irradiance and
-        temperature as an array of points spaced by SAMPLE_RES.
-
-        TODO: support quadrant 2, quadrant 4 I-V output
+        temperature as an array of points.
 
         Args:
             irrad (list[float]): Irradiance incident on PV. W/m^2.
             temp (list[float]): Surface temperature of PV. Kelvin.
+            curr_range (list[float]): Current bounds to capture.
+            volt_range (list[float]): Voltage bounds to capture.
 
         Returns:
             list[list[float, float, float]]: List of ordered
                 voltage-current-power triplets. Volts, Amps, Watts.
         """
-        iv = []
-
-        curr = curr_range[0]
-        bound_curr = 0.0
-        res = 0.1
-        loop = 0
-        num_loops = 3
-        while loop < num_loops:
-            # Increment resolution decreases by (0.05)^n
-            volt = self.get_voltage(curr, irrad, temp)
-            iv.append([volt, curr, volt * curr])
-
-            if volt < 0.0 and bound_curr == 0.0:
-                # Capture Y axis boundary condition; this is where the IV curve
-                # is the most flat and needs more resolution.
-                bound_curr = curr
-
-            if curr > curr_range[1]:
-                # https://www.desmos.com/calculator/mffm3b9ucm
-                # Set x=num_loops and adjust a, b, z to meet requirements
-                # - z: I_SC of typical cell
-                # - a: Starting proportion of Z, set to right side of knee of
-                #   typical I-V curve
-                # - b: Adjust such that at X=num_loops the curve is barely under
-                #   it (<0.1).
-                new_curr = bound_curr * (0.5 + m.log(loop + 1) * 0.45)
-                res = res / 3
-                curr = new_curr
-                loop += 1
-
-            curr += res
-
-        # Normalize data.
-        iv = normalize(np.array(iv), 100)
-
-        return iv
+        raise NotImplementedError
 
     def get_edge(
-        self, irrad: list[float], temp: list[float]
+        self,
+        irrad: list[float],
+        temp: list[float],
+        max_isc: float = 10.0,
+        max_voc: float = 10.0,
     ) -> ((float, float), (float, float)):
         """Get the 1st power quadrant edge characteristics of the instance.
 
         Args:
             irrad (list[float]): Irradiance incident on PV. W/m^2.
             temp (list[float]): Surface temperature of PV. Kelvin.
+            max_isc (float): Maximum expected 1st power quadrant ISC.
+            max_voc (float): Maximum expected 1st power quadrant VOC.
 
         Returns:
             (float, float), (float, float):
@@ -148,10 +135,9 @@ class PV:
                 Maximum power point voltage (Volts)
                 Maximum power point current (Amps)
         """
-        iv = self.get_iv(irrad, temp)
+        iv = self.get_iv(irrad, temp, curr_range=[0, max_isc], volt_range=[0, max_voc])
         df = pd.DataFrame(iv, columns=["Voltage (V)", "Current (A)", "Power (W)"])
-
-        df = df[(df["Voltage (V)"] >= 0.0) & (df["Current (A)"] >= 0.0)]
+        df = df[df["Power (W)"] > 0.0]
 
         v_oc = df.nlargest(1, "Voltage (V)").iloc[0]["Voltage (V)"]
         i_sc = df.nlargest(1, "Current (A)").iloc[0]["Current (A)"]
@@ -167,7 +153,10 @@ class PV:
         irrad: list[float],
         temp: list[float],
         curr_range: list[float] = [-10.0, 10.0],
-    ) -> None:
+        volt_range: list[float] = [-10.0, 10.0],
+        return_graph: bool = False,
+        show_exp_data: bool = False,
+    ) -> None | dict:
         """
         TODO: documentation, support for:
         - displaying experimental data
@@ -177,17 +166,8 @@ class PV:
         - specifying bounds
         """
 
-        if not QtWidgets.QApplication.instance():
-            app = QtWidgets.QApplication(sys.argv)
-        else:
-            app = QtWidgets.QApplication.instance()
-
-        container = QtWidgets.QWidget()
-        container_layout = QtWidgets.QGridLayout()
-        container.setLayout(container_layout)
-
         # Create graphs
-        data = self.get_iv(irrad, temp, curr_range)
+        data = self.get_iv(irrad, temp, curr_range, volt_range)
         data = np.transpose(data)
 
         # Populate graph
@@ -195,7 +175,7 @@ class PV:
             "instance": Graph(
                 "I-V/P-V Curve",
                 "Voltage (V)",
-                "Current (A)",
+                "Current/Power (A/W)",
             ),
             "title": "I-V/P-V Curve",
             "widget": None,
@@ -208,18 +188,41 @@ class PV:
             },
             "scatter",
         )
-        graph["widget"] = graph["instance"].get_graph()
-        # graph["instance"].set_graph_range([-0.7, 1.0], [-10, 10])
 
-        container_layout.addWidget(graph["widget"], *graph["position"])
+        if show_exp_data and self._data:
+            data = np.transpose(self._data)
+            graph["instance"].add_series(
+                {
+                    "iv_exp": {"x": data[0], "y": data[1], "color": (255, 0, 255, 255)},
+                    "pv_exp": {"x": data[0], "y": data[2], "color": (0, 255, 255, 255)},
+                },
+                "scatter",
+            )
 
-        win = QtWidgets.QMainWindow()
-        win.setGeometry(0, 0, 720, 480)
-        win.setWindowTitle(f"I-V/P-V Curve")
-        win.setCentralWidget(container)
+        graph["instance"].set_graph_range(volt_range, curr_range)
 
-        win.show()
-        exe = app.exec()
+        if return_graph:
+            return graph
+        else:
+            if not QtWidgets.QApplication.instance():
+                app = QtWidgets.QApplication(sys.argv)
+            else:
+                app = QtWidgets.QApplication.instance()
+
+            container = QtWidgets.QWidget()
+            container_layout = QtWidgets.QGridLayout()
+            container.setLayout(container_layout)
+
+            graph["widget"] = graph["instance"].get_graph()
+            container_layout.addWidget(graph["widget"], *graph["position"])
+
+            win = QtWidgets.QMainWindow()
+            win.setGeometry(0, 0, 720, 480)
+            win.setWindowTitle(f"I-V/P-V Curve")
+            win.setCentralWidget(container)
+
+            win.show()
+            exe = app.exec()
 
     def get_params(self) -> dict:
         """Get associated reference and curve fitting parameters associated with
@@ -230,9 +233,8 @@ class PV:
         """
         return self._params
 
-    def _set_params_and_fit(self, data, fitting_parameters, residual):
+    def _fit_params(self, data, fitting_parameters, residual):
         """Fit model to the data and update the associated parameters.
-        TODO: this.
 
         Args:
             data (_type_): _description_
@@ -247,17 +249,17 @@ class PV:
             if value["given"]:
                 optimizer_parameters.add(
                     key,
-                    min=value["min"] * 1e-7,
-                    value=value["val"] * 1e-7,
-                    max=value["max"] * 1e-7,
+                    min=value["min"] / self.FIT_RESOLUTION,
+                    value=value["val"] / self.FIT_RESOLUTION,
+                    max=value["max"] / self.FIT_RESOLUTION,
                     vary=False,
                 )
             else:
                 optimizer_parameters.add(
                     key,
-                    min=value["min"] * 1e-7,
-                    value=value["stc"] * 1e-7,
-                    max=value["max"] * 1e-7,
+                    min=value["min"] / self.FIT_RESOLUTION,
+                    value=value["stc"] / self.FIT_RESOLUTION,
+                    max=value["max"] / self.FIT_RESOLUTION,
                     vary=True,
                 )
 
@@ -270,7 +272,7 @@ class PV:
         print(fit_report(res))
 
         for key, value in fitting_parameters.items():
-            value["val"] = res.params[key].value * 1e7
+            value["val"] = res.params[key].value * self.FIT_RESOLUTION
 
         return fitting_parameters
 

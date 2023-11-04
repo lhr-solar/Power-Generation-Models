@@ -17,12 +17,12 @@ import numpy as np
 from environment.environment import Environment
 
 
-def test_env_empty():
+def test_empty():
     env = Environment()
     assert env.get_voxels().empty
 
 
-def test_env_add_voxel():
+def test_add_voxel():
     env = Environment()
     voxel = [0, 0, 0, 1000.0, 273.15]
 
@@ -30,7 +30,7 @@ def test_env_add_voxel():
     assert not env.get_voxels().empty
 
 
-def test_env_add_voxels():
+def test_add_voxels():
     env = Environment()
     voxels = [
         [1, 0, 0, 1000.0, 273.15],
@@ -43,7 +43,7 @@ def test_env_add_voxels():
     assert env.get_voxel(0, 1, 1) == [1000.0, 273.15]
 
 
-def test_env_gen_voxels():
+def test_gen_voxels():
     def generator() -> list:
         rows, columns = 50, 50
         time = 500
@@ -67,6 +67,27 @@ def test_env_gen_voxels():
     env.gen_voxels(generator)
     assert not env.get_voxels().empty
     assert not env.get_voxels_slice(1).empty
+
+
+def test_save_load_env():
+    import os
+
+    file_path = "./test_env.csv"
+    voxel = [0, 0, 0, 1000.0, 273.15]
+
+    # Save basic environment and verify file exists.
+    env = Environment()
+    env.add_voxel(*voxel)
+    env.save_env(file_path)
+    assert os.path.isfile(file_path)
+
+    # Create new environment and verify file content matches.
+    env = Environment(filepath=file_path)
+    assert env.get_voxel(0, 0, 0) == [1000.0, 273.15]
+
+    # Delete file.
+    assert os.path.isfile(file_path)
+    os.remove(file_path)
 
 
 if __name__ == "__main__":

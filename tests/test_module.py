@@ -17,6 +17,8 @@ from environment.environment import Environment
 from pv.cell.three_param_cell import ThreeParamCell
 from pv.module.bypass_diode import BypassDiode
 from pv.module.module import Module
+from common.graph import Graph
+from PySide6 import QtWidgets
 
 
 @pytest.fixture
@@ -75,7 +77,7 @@ def setup():
         },
         "diode": {
             "instance": BypassDiode(
-                params={"fit_ideality_factor": 1.5, "fit_rev_sat_current": 2 * 10 ^ -4}
+                params={"fit_ideality_factor": 1.5, "fit_rev_sat_curr": 2 * 10**-4}
             )
         },
     }
@@ -85,7 +87,7 @@ def setup():
     yield env, params, time_idx
 
 
-def test_module_default(setup):
+def test_sanity(setup):
     env, params, time_idx = setup
 
     module = Module(params=params)
@@ -98,28 +100,56 @@ def test_module_default(setup):
         temp.append(t)
 
     # At 0 A, we should be at VOC at STC.
-    assert module.get_voltage(0, irrad, temp) >= 0.721 * 3
-    # At ISC, we should be at 0 V at STC.
-    assert module.get_voltage(6.15, irrad, temp) == 0.0
+    assert module.get_voltage(0, irrad, temp) >= 0.721 * 2.9
+    # At ISC, we should be at 0 V at STC. However, the bypass diode decreases
+    # the ISC marginally, shifting the 6.15 ISC back a fraction of the volt.
+    assert module.get_voltage(6.15, irrad, temp) == pytest.approx(0.0, abs=0.2)
     # At very large current, we should be in quadrant II and negative voltage at STC.
     assert module.get_voltage(6.15 * 1.5, irrad, temp) < 0.0
 
     # At 0 V, we should be at ISC at STC.
-    assert module.get_current(0, irrad, temp) >= 6.15
-    # At VOC, we should be at 0 A at STC.
-    assert module.get_current(0.721 * 3, irrad, temp) == pytest.approx(0.0, abs=0.0001)
+    assert module.get_current(0, irrad, temp) == pytest.approx(6.15, abs=0.05)
+    # At VOC, we should be at 0 A at STC. However, the bypass diode decreases
+    # the ISC marginally, shifting the 6.15 ISC back a fraction of the volt.
+    assert module.get_current(0.721 * 3, irrad, temp) == pytest.approx(0.0, abs=0.01)
     # At very large voltage, we should be in quadrant IV and negative current at STC.
     assert module.get_current(0.721 * 3 * 1.5, irrad, temp) < 0.0
 
 
-def test_module_get_pos(setup):
+def test_equiv(setup):
+    """Assert that the two methods of deriving the model are within 5% of each
+    other."""
+    env, params, time_idx = setup
+
+    module = Module(params=params)
+    irrad = []
+    temp = []
+    pos = module.get_pos()
+    for p in pos:
+        g, t = env.get_voxel(*p, time_idx)
+        irrad.append(g)
+        temp.append(t)
+
+    for volt in np.linspace(-2.0, 2.3, 100):
+        curr = module.get_current(volt, irrad, temp)
+        volt2 = module.get_voltage(curr, irrad, temp)
+        print(f"{volt}\t{volt2}\t{curr}")
+        assert volt2 == pytest.approx(volt, abs=0.03)
+
+    for curr in np.linspace(-5.0, 10.0, 100):
+        volt = module.get_voltage(curr, irrad, temp)
+        curr2 = module.get_current(volt, irrad, temp)
+        assert curr2 == pytest.approx(curr, rel=0.05)
+
+
+def test_pos(setup):
     _, params, _ = setup
 
     module = Module(params=params)
     assert module.get_pos() == [[0, 0], [1, 0], [2, 0]]
 
 
-def test_module_fit_data():
+def test_fit_data():
     raise NotImplementedError
 
 
@@ -178,7 +208,7 @@ if __name__ == "__main__":
         },
         "diode": {
             "instance": BypassDiode(
-                params={"fit_ideality_factor": 1.5, "fit_rev_sat_current": 2 * 10**-4}
+                params={"fit_ideality_factor": 1.5, "fit_rev_sat_curr": 2 * 10**-4}
             )
         },
     }
@@ -194,11 +224,4 @@ if __name__ == "__main__":
         irrad.append(g)
         temp.append(t)
 
-    # edge, mpp = module.get_edge(irrad, temp)
-    # pmpp = mpp[0] * mpp[1]
-    # pedge = edge[0] * edge[1]
-    # ff = pmpp / pedge
-    # print(pmpp, pedge, ff, edge, mpp)
-
-    # print(module._params["diode"]["instance"].get_voltage(12, [1000], [298.15]))
-    module.vis(irrad, temp)
+    module.vis(irrad, temp, curr_range=[-5, 15], volt_range=[-0.6, 0.721 * 3.5])

@@ -16,8 +16,11 @@ import pytest
 
 from environment.environment import Environment
 from pv.cell.three_param_cell import ThreeParamCell
+from pv.module.bypass_diode import BypassDiode
 from pv.module.module import Module
 from pv.panel.panel import Panel
+from common.graph import Graph
+from PySide6 import QtWidgets
 
 
 @pytest.fixture
@@ -47,7 +50,9 @@ def setup():
                                         "ref_temp": 298.15,  # Kelvin
                                         "ref_voc": 0.721,  # Volts
                                         "ref_isc": 6.15,  # Amps
-                                        "fit_ideality_factor": 2.0,
+                                        "fit_fwd_ideality_factor": 1.294,
+                                        "fit_rev_ideality_factor": 2,
+                                        "fit_rev_sat_curr": 1 * 10**-5,
                                     },
                                     # data_fp="" TODO: link to test file.
                                 ),
@@ -60,14 +65,23 @@ def setup():
                                         "ref_temp": 298.15,  # Kelvin
                                         "ref_voc": 0.721,  # Volts
                                         "ref_isc": 6.15,  # Amps
-                                        "fit_ideality_factor": 2.0,
+                                        "fit_fwd_ideality_factor": 1.294,
+                                        "fit_rev_ideality_factor": 2,
+                                        "fit_rev_sat_curr": 1 * 10**-5,
                                     },
                                     # data_fp="" TODO: link to test file.
                                 ),
                                 "pos": [1, 0],
                             },
                         },
-                        "diode": {},
+                        "diode": {
+                            "instance": BypassDiode(
+                                params={
+                                    "fit_ideality_factor": 1.5,
+                                    "fit_rev_sat_curr": 2 * 10**-4,
+                                }
+                            )
+                        },
                     },
                     # data_fp="" TODO: link to test file
                 ),
@@ -84,7 +98,9 @@ def setup():
                                         "ref_temp": 298.15,  # Kelvin
                                         "ref_voc": 0.721,  # Volts
                                         "ref_isc": 6.15,  # Amps
-                                        "fit_ideality_factor": 2.0,
+                                        "fit_fwd_ideality_factor": 1.294,
+                                        "fit_rev_ideality_factor": 2,
+                                        "fit_rev_sat_curr": 1 * 10**-5,
                                     },
                                     # data_fp="" TODO: link to test file.
                                 ),
@@ -97,14 +113,23 @@ def setup():
                                         "ref_temp": 298.15,  # Kelvin
                                         "ref_voc": 0.721,  # Volts
                                         "ref_isc": 6.15,  # Amps
-                                        "fit_ideality_factor": 2.0,
+                                        "fit_fwd_ideality_factor": 1.294,
+                                        "fit_rev_ideality_factor": 2,
+                                        "fit_rev_sat_curr": 1 * 10**-5,
                                     },
                                     # data_fp="" TODO: link to test file.
                                 ),
                                 "pos": [1, 0],
                             },
                         },
-                        "diode": {},
+                        "diode": {
+                            "instance": BypassDiode(
+                                params={
+                                    "fit_ideality_factor": 1.5,
+                                    "fit_rev_sat_curr": 2 * 10**-4,
+                                }
+                            )
+                        },
                     },
                     # data_fp="" TODO: link to test file
                 ),
@@ -119,7 +144,7 @@ def setup():
     yield env, params, time_idx
 
 
-def test_panel_default(setup):
+def test_sanity(setup):
     env, params, time_idx = setup
 
     panel = Panel(params=params)
@@ -177,7 +202,9 @@ if __name__ == "__main__":
                                         "ref_temp": 298.15,  # Kelvin
                                         "ref_voc": 0.721,  # Volts
                                         "ref_isc": 6.15,  # Amps
-                                        "fit_ideality_factor": 2.0,
+                                        "fit_fwd_ideality_factor": 1.294,
+                                        "fit_rev_ideality_factor": 2,
+                                        "fit_rev_sat_curr": 1 * 10**-5,
                                     },
                                     # data_fp="" TODO: link to test file.
                                 ),
@@ -190,18 +217,27 @@ if __name__ == "__main__":
                                         "ref_temp": 298.15,  # Kelvin
                                         "ref_voc": 0.721,  # Volts
                                         "ref_isc": 6.15,  # Amps
-                                        "fit_ideality_factor": 2.0,
+                                        "fit_fwd_ideality_factor": 1.294,
+                                        "fit_rev_ideality_factor": 2,
+                                        "fit_rev_sat_curr": 1 * 10**-5,
                                     },
                                     # data_fp="" TODO: link to test file.
                                 ),
                                 "pos": [1, 0],
                             },
                         },
-                        "diode": {},
+                        "diode": {
+                            "instance": BypassDiode(
+                                params={
+                                    "fit_ideality_factor": 1.5,
+                                    "fit_rev_sat_curr": 2 * 10**-4,
+                                }
+                            )
+                        },
                     },
                     # data_fp="" TODO: link to test file
                 ),
-                "pos": [0, 0],
+                "pos": (0, 0),
             },
             "2": {
                 "instance": Module(
@@ -214,7 +250,9 @@ if __name__ == "__main__":
                                         "ref_temp": 298.15,  # Kelvin
                                         "ref_voc": 0.721,  # Volts
                                         "ref_isc": 6.15,  # Amps
-                                        "fit_ideality_factor": 2.0,
+                                        "fit_fwd_ideality_factor": 1.294,
+                                        "fit_rev_ideality_factor": 2,
+                                        "fit_rev_sat_curr": 1 * 10**-5,
                                     },
                                     # data_fp="" TODO: link to test file.
                                 ),
@@ -227,18 +265,27 @@ if __name__ == "__main__":
                                         "ref_temp": 298.15,  # Kelvin
                                         "ref_voc": 0.721,  # Volts
                                         "ref_isc": 6.15,  # Amps
-                                        "fit_ideality_factor": 2.0,
+                                        "fit_fwd_ideality_factor": 1.294,
+                                        "fit_rev_ideality_factor": 2,
+                                        "fit_rev_sat_curr": 1 * 10**-5,
                                     },
                                     # data_fp="" TODO: link to test file.
                                 ),
                                 "pos": [1, 0],
                             },
                         },
-                        "diode": {},
+                        "diode": {
+                            "instance": BypassDiode(
+                                params={
+                                    "fit_ideality_factor": 1.5,
+                                    "fit_rev_sat_curr": 2 * 10**-4,
+                                }
+                            )
+                        },
                     },
                     # data_fp="" TODO: link to test file
                 ),
-                "pos": [2, 0],
+                "pos": (2, 0),
             },
         },
         "fit_lead_resistance": 0.0,  # Ohms
@@ -255,5 +302,4 @@ if __name__ == "__main__":
         irrad.append(g)
         temp.append(t)
 
-    print(panel.get_edge(irrad, temp))
-    panel.vis(irrad, temp)
+    panel.vis(irrad, temp, curr_range=[-5, 15], volt_range=[-1, 3])
