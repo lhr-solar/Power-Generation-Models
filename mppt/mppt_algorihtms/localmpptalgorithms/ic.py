@@ -29,12 +29,12 @@ The implementation of this algorithm is based on the folowing paper:
 
 
 # Custom Imports.
-from models.mppt.mppt_algorihtms.localmpptalgorithms.localMpptAlgorithm import localMpptAlgorithm
+from mppt.mppt_algorihtms.localmpptalgorithms.localMpptAlgorithm import LocalMpptAlgorithm
 import environment.environment as ENV
 import pv.pv as PV
 
 
-class ic(localMpptAlgorithm):
+class IC(LocalMpptAlgorithm):
     """
     The IC (Incremental Conductance) class is a derived class of
     LocalMPPTAlgorithm, utilizing the comparison of the incremental conductance
@@ -46,13 +46,13 @@ class ic(localMpptAlgorithm):
     error = 0.01
 
     def __init__(self, numCells=1, strideType="Fixed"):
-        super(ic, self).__init__(numCells, "IC", strideType)
+        super(IC, self).__init__(numCells, "IC", strideType)
 
     def getReferenceVoltage(self, arrVoltage, environment: ENV, pv: PV):
-        dataf = ENV.get_voxels()
+        dataf = environment.get_voxels()
         irrad = dataf["IRRAD"]
         temp = dataf["TEMP"]
-        arrCurrent = PV.get_voltage(arrVoltage, irrad, temp)
+        arrCurrent = pv.get_voltage(arrVoltage, irrad, temp)
         # Compute secondary values.
         dI = arrCurrent - self.iOld
         dV = arrVoltage - self.vOld
@@ -64,11 +64,11 @@ class ic(localMpptAlgorithm):
 
         # Determine the direction of movement and VREF.
         vRef = arrVoltage
-        if abs(dI * arrVoltage + arrCurrent * dV) < ic.error:  # At MPP.
+        if abs(dI * arrVoltage + arrCurrent * dV) < IC.error:  # At MPP.
             pass
-        elif dI * arrVoltage + arrCurrent * dV > ic.error:  # Left of MPP.
+        elif dI * arrVoltage + arrCurrent * dV > IC.error:  # Left of MPP.
             vRef += stride
-        elif dI * arrVoltage + arrCurrent * dV < -ic.error:  # Right o MPP.
+        elif dI * arrVoltage + arrCurrent * dV < -IC.error:  # Right o MPP.
             vRef -= stride
         else:
             raise Exception("[IC][getReferenceVoltage] Invalid region of interest.")

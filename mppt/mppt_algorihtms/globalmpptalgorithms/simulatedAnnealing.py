@@ -13,12 +13,12 @@ import random
 import math
 
 # Custom Imports.
-from models.mppt.mppt_algorihtms.globalmpptalgorithms.globalMpptAlgorithm import globalMpptAlgorithm
+from mppt.mppt_algorihtms.globalmpptalgorithms.globalMpptAlgorithm import GlobalMPPTAlgorithm
 import environment.environment as ENV
 import pv.pv as PV
 
 
-class simulatedAnnealing(globalMpptAlgorithm):
+class SimulatedAnnealing(GlobalMPPTAlgorithm):
     """
     The Simulated Annealing class is a derived concrete class of GlobalAlgorithm
     implementing the Simulated Annealing algorithm. It randomly samples values from
@@ -35,12 +35,12 @@ class simulatedAnnealing(globalMpptAlgorithm):
     k = 15
 
     def __init__(self, numCells=1, MPPTLocalAlgoType="Default", strideType="Fixed"):
-        super(simulatedAnnealing, self).__init__(
+        super(SimulatedAnnealing, self).__init__(
             numCells, "Simulated Annealing", MPPTLocalAlgoType, strideType
         )
         # The 'temperature' tells us how likely we are to accept a change even if the power decreases
 
-        self.temp = simulatedAnnealing.INIT_TEMP
+        self.temp = SimulatedAnnealing.INIT_TEMP
         self.cycle = 0
         self._PVEnv = ENV.get_voxels()
         self._PVSource = PVSource()
@@ -54,15 +54,15 @@ class simulatedAnnealing(globalMpptAlgorithm):
 
     def getReferenceVoltage(self, arrVoltage, arrCurrent, irradiance, temperature):
         vRef = arrVoltage
-        if self.temp > simulatedAnnealing.MIN_TEMP:
+        if self.temp > SimulatedAnnealing.MIN_TEMP:
             if self.cycle == 0:
                 vRef = round(
-                    random.uniform(0, globalMpptAlgorithm.MAX_VOLTAGE), 2
+                    random.uniform(0, GlobalMPPTAlgorithm.MAX_VOLTAGE), 2
                 )  # first random sample and operating point
                 self.cycle += 1
             else:
                 arrPower = arrVoltage * arrCurrent
-                sample = round(random.uniform(0, globalMpptAlgorithm.MAX_VOLTAGE), 2)
+                sample = round(random.uniform(0, GlobalMPPTAlgorithm.MAX_VOLTAGE), 2)
                 modules = self._PVEnv.getSourceDefinition(sample)
                 sourceCurrent = self._PVSource.getSourceCurrent(modules)
                 power = (
@@ -73,13 +73,13 @@ class simulatedAnnealing(globalMpptAlgorithm):
                 else:
                     # if not greater, choose to go to this operating point if a calculated probability is met.
                     p_r = math.exp(
-                        simulatedAnnealing.k * (power - arrPower) / self.temp
+                        SimulatedAnnealing.k * (power - arrPower) / self.temp
                     )
                     diceRoll = random.random()
                     if diceRoll < p_r:
                         vRef = sample
                 if self.cycle % 4 == 0:  # temperature is decreased every 4 cycles
-                    self.temp = self.temp * simulatedAnnealing.ALPHA
+                    self.temp = self.temp * SimulatedAnnealing.ALPHA
                 self.cycle += 1
         else:
             if self.startLocal:  # kick start local algorithm
@@ -117,7 +117,7 @@ class simulatedAnnealing(globalMpptAlgorithm):
                         ) / pastAverage <= -0.3:  # if drastic change in power output, then reinitialize the simulated annealing
                             vRef = 0
                             self.cycle = 0
-                            self.temp = simulatedAnnealing.INIT_TEMP
+                            self.temp = SimulatedAnnealing.INIT_TEMP
                             self.startLocal = True
                             self.runningHistory.clear()
                             self.pastHistories.clear()
@@ -180,5 +180,5 @@ class simulatedAnnealing(globalMpptAlgorithm):
         # return vRef
 
     def reset(self):
-        super(simulatedAnnealing, self).reset()
+        super(SimulatedAnnealing, self).reset()
         self.temp = 25

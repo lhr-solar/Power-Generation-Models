@@ -57,12 +57,12 @@ Bisection Method: https://en.wikipedia.org/wiki/Bisection_method
 from math import sqrt
 
 # Custom Imports.
-from models.mppt.mppt_algorihtms.localmpptalgorithms.localMpptAlgorithm import localMpptAlgorithm
+from mppt.mppt_algorihtms.localmpptalgorithms.localMpptAlgorithm import LocalMpptAlgorithm
 import environment.environment as ENV
 import pv.pv as PV
 
 
-class bisection(localMpptAlgorithm):
+class Bisection(LocalMpptAlgorithm):
     """
     The Bisection class is a derived class of LocalMpptAlgorithm. The Bisection
     Method looks for the root of a unimodal function. In this application, it is
@@ -74,17 +74,17 @@ class bisection(localMpptAlgorithm):
     error = 0.01
 
     def __init__(self, numCells=1, strideType="Fixed"):
-        super(bisection, self).__init__(numCells, "Bisection", strideType)
+        super(Bisection, self).__init__(numCells, "Bisection", strideType)
 
         # Current algorithm internal cycle.
         self.cycle = 0
 
     def getReferenceVoltage(self, arrVoltage, environment: ENV, pv: PV):
 
-        dataf = ENV.get_voxels()
+        dataf = environment.get_voxels()
         irrad = dataf["IRRAD"]
         temp = dataf["TEMP"]
-        arrCurrent = PV.get_voltage(arrVoltage, irrad, temp)
+        arrCurrent = pv.get_voltage(arrVoltage, irrad, temp)
         vRef = 0
         if self.cycle == 0:
             vRef = (self.leftBound + self.rightBound) / 2
@@ -96,7 +96,7 @@ class bisection(localMpptAlgorithm):
             dP_dV = 0
             if arrVoltage - self.vOld != 0:  # Prevent divide by 0 issues.
                 dP_dV = (pNew - self.pOld) / (arrVoltage - self.vOld)
-            if abs(dP_dV) <= bisection.error:
+            if abs(dP_dV) <= Bisection.error:
                 vRef = arrVoltage
             elif dP_dV > 0:
                 self.leftBound = arrVoltage
@@ -112,5 +112,5 @@ class bisection(localMpptAlgorithm):
         return vRef
 
     def reset(self):
-        super(bisection, self).reset()
+        super(Bisection, self).reset()
         self.cycle = 0

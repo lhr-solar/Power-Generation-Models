@@ -15,11 +15,11 @@ import random
 import math
 
 # custom imports
-from models.mppt.mppt_algorihtms.globalmpptalgorithms.globalMpptAlgorithm import globalMpptAlgorithm
+from mppt.mppt_algorihtms.globalmpptalgorithms.globalMpptAlgorithm import GlobalMPPTAlgorithm
 import environment.environment as ENV
 import pv.pv as PV
 
-class firefly:
+class Firefly:
     """
     Class represents a firefly in the Firefly optimization algorithm. It requries a brightness
     level, which is the value of the objective function (power) and a position (a voltage).
@@ -100,7 +100,7 @@ class firefly:
         """
 
         r_pq = abs(self.position - otherFirefly.position)
-        return firefly.B_0 * math.exp(-firefly.GAMMA*(r_pq**2))
+        return Firefly.B_0 * math.exp(-Firefly.GAMMA*(r_pq**2))
     
     def getNextPosition(self, otherFirefly):
         """
@@ -125,29 +125,29 @@ class firefly:
 
         beta = self.getAttractionLevel(otherFirefly)
         dist = self.position - otherFirefly.position
-        newPos = self.position + beta*dist + firefly.ALPHA*(random.random() - 0.5)
+        newPos = self.position + beta*dist + Firefly.ALPHA*(random.random() - 0.5)
         return newPos
     
-class fireflyAlgorithm(globalMpptAlgorithm):
+class FireflyAlgorithm(GlobalMPPTAlgorithm):
     NUM_FIREFLIES = 6
 
     def __init__(self, numCells=1, MPPTLocalAlgoType="Default",strideType="Fixed"):
-        super(firefly, self).__init__(
+        super(FireflyAlgorithm, self).__init__(
             numCells, "Firefly", MPPTLocalAlgoType, strideType
         )
         self.fireflies = []
-        interval = globalMpptAlgorithm.MAX_VOLTAGE / (fireflyAlgorithm.NUM_FIREFLIES + 1)
-        for i in range(fireflyAlgorithm.NUM_FIREFLIES):
-            self.fireflies.append(firefly(interval*i))
+        interval = GlobalMPPTAlgorithm.MAX_VOLTAGE / (FireflyAlgorithm.NUM_FIREFLIES + 1)
+        for i in range(FireflyAlgorithm.NUM_FIREFLIES):
+            self.fireflies.append(Firefly(interval*i))
         self.startLocal = True
         self._setup = True
         self.kick = True
 
     def getReferenceVoltage(self, arrVoltage, environment: ENV, pv: PV):
-        dataf = ENV.get_voxels()
+        dataf = environment.get_voxels()
         irrad = dataf["IRRAD"]
         temp = dataf["TEMP"]
-        arrCurrent = PV.get_voltage(arrVoltage, irrad, temp)
+        arrCurrent = pv.get_voltage(arrVoltage, irrad, temp)
         return arrVoltage
 
     def reset(self):

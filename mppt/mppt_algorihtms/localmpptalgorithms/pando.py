@@ -12,12 +12,12 @@ Description: Implementation of the PandO hill climbing algorithm.
 
 
 # Custom Imports.
-from models.mppt.mppt_algorihtms.localmpptalgorithms.localMpptAlgorithm import localMpptAlgorithm
+from mppt.mppt_algorihtms.localmpptalgorithms.localMpptAlgorithm import LocalMpptAlgorithm
 import environment.environment as ENV
 import pv.pv as PV
 
 
-class pando(localMpptAlgorithm):
+class PandO(LocalMpptAlgorithm):
     """
     The PandO (Perturb and Observe) class is a derived class of
     LocalMPPTAlgorithm, utilizing the change of power and change of voltage over
@@ -26,14 +26,14 @@ class pando(localMpptAlgorithm):
     """
 
     def __init__(self, numCells=1, strideType="Fixed"):
-        super(pando, self).__init__(numCells, "PandO", strideType)
+        super(PandO, self).__init__(numCells, "PandO", strideType)
         self._minVoltage = .05
 
     def getReferenceVoltage(self, arrVoltage, environment: ENV, pv: PV):
-        dataf = ENV.get_voxels()
+        dataf = environment.get_voxels()
         irrad = dataf["IRRAD"]
         temp = dataf["TEMP"]
-        arrCurrent = PV.get_voltage(arrVoltage, irrad, temp)
+        arrCurrent = pv.get_voltage(arrVoltage, irrad, temp)
         # Compute secondary values.
         pIn = arrVoltage * arrCurrent
         dV = arrVoltage - self.vOld

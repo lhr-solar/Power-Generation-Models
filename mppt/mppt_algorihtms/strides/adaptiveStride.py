@@ -41,19 +41,20 @@ from math import exp
 # Custom Imports.
 import environment.environment as ENV
 import pv.pv as PV
+from strides.stride import Stride
 
 
-class adaptiveStride(stride):
+class AdaptiveStride(Stride):
     """
     Derived class of Stride seeking to adaptively jump towards the VMPP at all
     times.
     """
 
     def __init__(self, minStride=0.01, VMPP=0.621, error=0.05):
-        super(adaptiveStride, self).__init__("Adaptive", minStride, VMPP, error)
+        super(AdaptiveStride, self).__init__("Adaptive", minStride, VMPP, error)
 
     def getStride(self, arrVoltage, environment: ENV, pv: PV):
-        dataf = ENV.get_voxels()
+        dataf = environment.get_voxels()
         irrad = dataf["IRRAD"]
         temp = dataf["TEMP"]
         minStride = self.error * self.error * self.VMPP / (2 * (1 - self.error))

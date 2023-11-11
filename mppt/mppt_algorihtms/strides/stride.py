@@ -12,7 +12,7 @@ Description: Implementation of the Stride class.
 import environment.environment as ENVIRONMENT
 import pv.pv as PV
 
-class stride:
+class Stride:
     """
     The Stride class provides the base API for derived classes to
     calculate the stride (change of VREF) for various MPPT algorithms.

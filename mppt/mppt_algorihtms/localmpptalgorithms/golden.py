@@ -73,12 +73,12 @@ Golden Section Search: https://en.wikipedia.org/wiki/Golden-section_search
 from math import sqrt
 
 # Custom Imports.
-from models.mppt.mppt_algorihtms.localmpptalgorithms.localMpptAlgorithm import localMpptAlgorithm
+from mppt.mppt_algorihtms.localmpptalgorithms.localMpptAlgorithm import LocalMpptAlgorithm
 import environment.environment as ENV
 import pv.pv as PV
 
 
-class golden(localMpptAlgorithm):
+class Golden(LocalMpptAlgorithm):
     """
     The Golden class is a derived class that determines a VREF to apply
     over PSource to maximize the power generated. Golden splitting the search
@@ -89,7 +89,7 @@ class golden(localMpptAlgorithm):
     phi = (sqrt(5) + 1) / 2 - 1
 
     def __init__(self, numCells=1, strideType="Fixed"):
-        super(golden, self).__init__(numCells, "Golden", strideType)
+        super(Golden, self).__init__(numCells, "Golden", strideType)
 
         # Current algorithm internal cycle.
         self.cycle = 0
@@ -103,19 +103,19 @@ class golden(localMpptAlgorithm):
         self.powerL2 = 0
 
     def getReferenceVoltage(self, arrVoltage, environment: ENV, pv: PV):
-        dataf = ENV.get_voxels()
+        dataf = environment.get_voxels()
         irrad = dataf["IRRAD"]
         temp = dataf["TEMP"]
-        arrCurrent = PV.get_voltage(arrVoltage, irrad, temp)
+        arrCurrent = pv.get_voltage(arrVoltage, irrad, temp)
         vRef = 0
 
         if self.cycle == 0:
-            self.l1 = self.rightBound - (self.rightBound - self.leftBound) * golden.phi
+            self.l1 = self.rightBound - (self.rightBound - self.leftBound) * Golden.phi
             vRef = self.l1
             self.cycle = 1
         elif self.cycle == 1:
             self.powerL1 = arrVoltage * arrCurrent
-            self.l2 = (self.rightBound - self.leftBound) * golden.phi + self.leftBound
+            self.l2 = (self.rightBound - self.leftBound) * Golden.phi + self.leftBound
             vRef = self.l2
             self.cycle = 2
         else:
@@ -132,7 +132,7 @@ class golden(localMpptAlgorithm):
                 self.powerL2 = self.powerL1
 
                 self.l1 = (
-                    self.rightBound - (self.rightBound - self.leftBound) * golden.phi
+                    self.rightBound - (self.rightBound - self.leftBound) * Golden.phi
                 )
                 vRef = self.l1
                 self.cycle = 3
@@ -143,14 +143,14 @@ class golden(localMpptAlgorithm):
 
                 self.l2 = (
                     self.rightBound - self.leftBound
-                ) * golden.phi + self.leftBound
+                ) * Golden.phi + self.leftBound
                 vRef = self.l2
                 self.cycle = 2
 
         return vRef
 
     def reset(self):
-        super(golden, self).reset()
+        super(Golden, self).reset()
         self.cycle = 0
         self.l1 = self.leftBound
         self.l2 = self.rightBound

@@ -11,16 +11,16 @@ Description: Implementation of the LocalMPPTAlgorithm class.
 
 
 # Custom Imports.
-from models.mppt.mppt_algorihtms.strides.stride import stride
-from models.mppt.mppt_algorihtms.strides.adaptiveStride import adaptiveStride
-from models.mppt.mppt_algorihtms.strides.bisectionStride import bisectionStride
-from models.mppt.mppt_algorihtms.strides.optimalStride import optimalStride
+from mppt.mppt_algorihtms.strides.stride import Stride
+from mppt.mppt_algorihtms.strides.adaptiveStride import AdaptiveStride
+from mppt.mppt_algorihtms.strides.bisectionStride import BisectionStride
+from mppt.mppt_algorihtms.strides.optimalStride import OptimalStride
 import environment.environment as ENV
 import pv.pv as PV
 
 
 
-class localMpptAlgorithm:
+class LocalMpptAlgorithm:
     """
     The LocalMPPTAlgorithm class provides the base API for derived classes to
     calculate or predict voltage setpoints that would maximize the output power
@@ -39,7 +39,7 @@ class localMpptAlgorithm:
     # standard conditions.
     MAX_VOLTAGE_PER_CELL = 0.8
 
-    def __init__(self, numCells=1, MPPTLocalAlgoType="Default", strideType="Fixed"):
+    def __init__(self, numCells=1, MPPTLocalAlgoType="Default", strideType="Fixed", environment: ENV = None, pv: PV = None):
         """
         Sets up the initial source parameters.
 
@@ -53,21 +53,21 @@ class localMpptAlgorithm:
         strideType: String
             The name of the stride algorithm type.
         """
-        localMpptAlgorithm.MAX_VOLTAGE = (
-            numCells * localMpptAlgorithm.MAX_VOLTAGE_PER_CELL
+        LocalMpptAlgorithm.MAX_VOLTAGE = (
+            numCells * LocalMpptAlgorithm.MAX_VOLTAGE_PER_CELL
         )
         self._MPPTLocalAlgoType = MPPTLocalAlgoType
 
         if strideType == "Adaptive":
-            self._strideModel = adaptiveStride()
+            self._strideModel = AdaptiveStride()
         elif strideType == "Bisection":
-            self._strideModel = bisectionStride()
+            self._strideModel = BisectionStride()
         elif strideType == "Optimal":
-            self._strideModel = optimalStride()
+            self._strideModel = OptimalStride()
         elif strideType == "Fixed":
-            self._strideModel = stride()
+            self._strideModel = Stride()
         else:
-            self._strideModel = stride()
+            self._strideModel = Stride()
 
         # Previous array voltage value.
         self.vOld = 0.0
@@ -87,14 +87,14 @@ class localMpptAlgorithm:
         # Bounds for the LocalMPPTAlgorithm. A naive assumption is that the
         # function within these bounds are unimodal.
         self.leftBound = 0
-        dataf = ENV.get_voxels()
+        dataf = environment.get_voxels()
         irrad = dataf["IRRAD"]
         temp = dataf["TEMP"]
-        f,s = PV.get_edge(irrad, temp)
+        f,s = pv.get_edge(irrad, temp)
         self.rightBound = f[0]
         
 
-    def setup(self, VMPP=0.621, leftBound=0, rightBound=100):
+    def setup(self, VMPP=0.621, leftBound=0, rightBound=100, environment: ENV = None, pv: PV = None):
         """
         Reinitializes the predicted parameters for the local MPPT algorithms context.
 
@@ -104,10 +104,10 @@ class localMpptAlgorithm:
             The voltage of the Maximum Power Point.
         """
         self.leftBound = leftBound
-        dataf = ENV.get_voxels()
+        dataf = environment.get_voxels()
         irrad = dataf["IRRAD"]
         temp = dataf["TEMP"]
-        f,s = PV.get_edge(irrad, temp)
+        f,s = pv.get_edge(irrad, temp)
         self.rightBound = f[0]
         self._strideModel.setup(VMPP)
 
@@ -156,7 +156,7 @@ class localMpptAlgorithm:
         self.irrOld = 0.0
         self.tOld = 0.0
         self.leftBound = 0
-        self.rightBound = localMpptAlgorithm.MAX_VOLTAGE
+        self.rightBound = LocalMpptAlgorithm.MAX_VOLTAGE
 
     def getLocalMPPTType(self):
         """

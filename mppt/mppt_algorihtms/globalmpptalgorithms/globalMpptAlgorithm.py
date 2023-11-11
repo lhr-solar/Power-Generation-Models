@@ -12,17 +12,17 @@ Description: Implementation of the GlobalMPPTAlgorithm class.
 
 
 # Custom Imports.
-from models.mppt.mppt_algorihtms.localmpptalgorithms.localMpptAlgorithm import localMpptAlgorithm
-from models.mppt.mppt_algorihtms.localmpptalgorithms.pando import pando
-from models.mppt.mppt_algorihtms.localmpptalgorithms.ic import ic
-from models.mppt.mppt_algorihtms.localmpptalgorithms.fc import fc
-from models.mppt.mppt_algorihtms.localmpptalgorithms.ternary import ternary
-from models.mppt.mppt_algorihtms.localmpptalgorithms.golden import golden
-from models.mppt.mppt_algorihtms.localmpptalgorithms.bisection import bisection
+from mppt.mppt_algorihtms.localmpptalgorithms.localMpptAlgorithm import LocalMpptAlgorithm
+from mppt.mppt_algorihtms.localmpptalgorithms.pando import PandO
+from mppt.mppt_algorihtms.localmpptalgorithms.ic import IC
+from mppt.mppt_algorihtms.localmpptalgorithms.fc import FC
+from mppt.mppt_algorihtms.localmpptalgorithms.ternary import Ternary
+from mppt.mppt_algorihtms.localmpptalgorithms.golden import Golden
+from mppt.mppt_algorihtms.localmpptalgorithms.bisection import Bisection
 import environment.environment as ENV
 import pv.pv as PV
 
-class globalMpptAlgorithm:
+class GlobalMPPTAlgorithm:
     """
     The GlobalMPPTAlgorithm class and derived classes attempt to solve P-V
     curves with multiple local maxima and a single global maxima.
@@ -63,27 +63,27 @@ class globalMpptAlgorithm:
             The name of the stride algorithm type.
         TODO: Add stride argument to voltage sweep constructor.
         """
-        globalMpptAlgorithm.MAX_VOLTAGE = round(
-            globalMpptAlgorithm.MAX_VOLTAGE_PER_CELL * numCells, 2
+        GlobalMPPTAlgorithm.MAX_VOLTAGE = round(
+            GlobalMPPTAlgorithm.MAX_VOLTAGE_PER_CELL * numCells, 2
         )
         self._MPPTGlobalAlgoType = MPPTGlobalAlgoType
 
         if MPPTLocalAlgoType == "Bisection":
-            self._model = bisection(numCells, strideType)
+            self._model = Bisection(numCells, strideType)
         elif MPPTLocalAlgoType == "FC":
-            self._model = fc(numCells, strideType)
+            self._model = FC(numCells, strideType)
         elif MPPTLocalAlgoType == "Golden":
-            self._model = golden(numCells, strideType)
+            self._model = Golden(numCells, strideType)
         elif MPPTLocalAlgoType == "IC":
-            self._model = ic(numCells, strideType)
+            self._model = IC(numCells, strideType)
         elif MPPTLocalAlgoType == "PandO":
-            self._model = pando(numCells, strideType)
+            self._model = PandO(numCells, strideType)
         elif MPPTLocalAlgoType == "Ternary":
-            self._model = ternary(numCells, strideType)
+            self._model = Ternary(numCells, strideType)
         elif MPPTLocalAlgoType == "Default":
-            self._model = localMpptAlgorithm(numCells, MPPTLocalAlgoType, strideType)
+            self._model = LocalMpptAlgorithm(numCells, MPPTLocalAlgoType, strideType)
         else:
-            self._model = localMpptAlgorithm(numCells, MPPTLocalAlgoType, strideType)
+            self._model = LocalMpptAlgorithm(numCells, MPPTLocalAlgoType, strideType)
 
         self.vOld = 0.0
         self.iOld = 0.0
@@ -123,10 +123,10 @@ class globalMpptAlgorithm:
         steady state behavior by the next MPPT cycle. This should always be
         considered in the algorithms.
         """
-        dataf = ENV.get_voxels()
+        dataf = environment.get_voxels()
         irrad = dataf["IRRAD"]
         temp = dataf["TEMP"]
-        arrCurrent = PV.get_voltage(arrVoltage, irrad, temp)
+        arrCurrent = pv.get_voltage(arrVoltage, irrad, temp)
         vRef = self._model.getReferenceVoltage(
             arrVoltage, arrCurrent, irrad, temp
         )
@@ -191,4 +191,4 @@ class globalMpptAlgorithm:
         ------
         The left and right bounds for the global maximum of the P-V curve.
         """
-        return (0.0, globalMpptAlgorithm.MAX_VOLTAGE)
+        return (0.0, GlobalMPPTAlgorithm.MAX_VOLTAGE)

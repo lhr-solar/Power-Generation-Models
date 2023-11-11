@@ -8,12 +8,12 @@ Last Modified: 02/27/2021
 
 Description: Implementation of the dP/dV feedback control D&C algorithm.
 """
-from models.mppt.mppt_algorihtms.localmpptalgorithms.localMpptAlgorithm import localMpptAlgorithm
+from mppt.mppt_algorihtms.localmpptalgorithms.localMpptAlgorithm import LocalMpptAlgorithm
 import environment.environment as ENV
 import pv.pv as PV
 
 
-class fc(localMpptAlgorithm):
+class FC(LocalMpptAlgorithm):
     """
     The FC class is a derived class of LocalMPPTAlgorithm, utilizing the change
     of power and change of voltage over time to determine the direction of
@@ -25,13 +25,13 @@ class fc(localMpptAlgorithm):
     error = 0.05
 
     def __init__(self, numCells=1, strideType="Fixed"):
-        super(fc, self).__init__(numCells, "FC", strideType)
+        super(FC, self).__init__(numCells, "FC", strideType)
 
     def getReferenceVoltage(self, arrVoltage, environment: ENV, pv: PV):
-        dataf = ENV.get_voxels()
+        dataf = environment.get_voxels()
         irrad = dataf["IRRAD"]
         temp = dataf["TEMP"]
-        arrCurrent = PV.get_voltage(arrVoltage, irrad, temp)
+        arrCurrent = pv.get_voltage(arrVoltage, irrad, temp)
         arrPower = arrCurrent * arrVoltage
         dP = arrPower - self.pOld
         dV = arrVoltage - self.vOld
@@ -41,7 +41,7 @@ class fc(localMpptAlgorithm):
         vRef = arrVoltage
         if dV == 0:  # Prevent divide by 0 issues.
             vRef += 0.005
-        elif abs(dP / dV) < fc.error:
+        elif abs(dP / dV) < FC.error:
             pass
         else:
             if dP / dV > 0:

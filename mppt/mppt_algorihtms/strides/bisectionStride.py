@@ -55,11 +55,11 @@ discussed in the following paper:
 
 # Custom Imports.
 import environment.environment as ENV
-from models.mppt.mppt_algorihtms.stride import stride
+from mppt.mppt_algorihtms.strides.stride import Stride
 import pv.pv as PV
 
 
-class bisectionStride(stride):
+class BisectionStride(Stride):
     """
     Derived class of Stride seeking to jump to the VMPP at all times.
     """
@@ -76,7 +76,7 @@ class bisectionStride(stride):
             The multiplier that dictates how large the stride is calculated when
             on the left side of the P-V curve. Empirically determined.
         """
-        super(bisectionStride, self).__init__("Bisection", minStride, VMPP, error)
+        super(BisectionStride, self).__init__("Bisection", minStride, VMPP, error)
 
         # Constant for determining convergence speed on the left side of the VMPP.
         self.slopeMultiplier = slopeMultiplier
@@ -86,10 +86,10 @@ class bisectionStride(stride):
         self._minVoltDiff = 0.001
 
     def getStride(self, arrVoltage, environment: ENV, pv: PV):
-        dataf = ENV.get_voxels()
+        dataf = environment.get_voxels()
         irrad = dataf["IRRAD"]
         temp = dataf["TEMP"]
-        arrCurrent = PV.get_voltage(arrVoltage, irrad, temp)
+        arrCurrent = pv.get_voltage(arrVoltage, irrad, temp)
         pIn = arrVoltage * arrCurrent
         dV = arrVoltage - self.vOld
         dP = pIn - self.pOld

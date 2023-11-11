@@ -35,19 +35,19 @@ discussed in the following paper:
 
 # Custom Imports.
 import environment.environment as ENV
-from models.mppt.mppt_algorihtms.strides.stride import stride
+from mppt.mppt_algorihtms.strides.stride import Stride
 import pv.pv as PV
 
 
-class optimalStride(stride):
+class OptimalStride(Stride):
     def __init__(self, minStride=0.01, VMPP=0.621, error=0.05):
-        super(optimalStride, self).__init__("Optimal", minStride, VMPP, error)
+        super(OptimalStride, self).__init__("Optimal", minStride, VMPP, error)
 
     def getStride(self, arrVoltage, environment: ENV, pv: PV):
-        dataf = ENV.get_voxels()
+        dataf = environment.get_voxels()
         irrad = dataf["IRRAD"]
         temp = dataf["TEMP"]
-        arrCurrent = PV.get_voltage(arrVoltage, irrad, temp)
+        arrCurrent = pv.get_voltage(arrVoltage, irrad, temp)
         minStride = self.error * self.error * self.VMPP / (2 * (1 - self.error))
         stride = abs(self.VMPP - arrVoltage)
         return stride + minStride

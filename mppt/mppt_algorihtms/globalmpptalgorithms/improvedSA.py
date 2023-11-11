@@ -14,12 +14,12 @@ import random
 import math
 
 # custom imports
-from models.mppt.mppt_algorihtms.globalmpptalgorithms.globalMpptAlgorithm import globalMpptAlgorithm
+from mppt.mppt_algorihtms.globalmpptalgorithms.globalMpptAlgorithm import GlobalMPPTAlgorithm
 import environment.environment as ENV
 import pv.pv as PV
 
 
-class improvedSA(globalMpptAlgorithm):
+class ImprovedSA(GlobalMPPTAlgorithm):
     """
     The Simulated Annealing class is a derived concrete class of GlobalAlgorithm
     implementing the Simulated Annealing algorithm. It randomly samples values from
@@ -39,7 +39,7 @@ class improvedSA(globalMpptAlgorithm):
     k = 15
 
     def __init__(self, numCells=1, MPPTLocalAlgoType="Default", strideType="Fixed"):
-        super(improvedSA, self).__init__(
+        super(ImprovedSA, self).__init__(
             numCells, "Improved SA", MPPTLocalAlgoType, strideType
         )
         """
@@ -58,7 +58,7 @@ class improvedSA(globalMpptAlgorithm):
         -------
         None
         """
-        self.temp = improvedSA.INIT_TEMP
+        self.temp = ImprovedSA.INIT_TEMP
         # self.step = ImprovedSA.INIT_STEP
         # self.no_accept = 0
         # self.no_perturb = 0
@@ -94,15 +94,15 @@ class improvedSA(globalMpptAlgorithm):
         vRef : float
             array voltage to output
         """
-        dataf = ENV.get_voxels()
+        dataf = environment.get_voxels()
         irrad = dataf["IRRAD"]
         temp = dataf["TEMP"]
-        arrCurrent = PV.get_voltage(arrVoltage, irrad, temp)
+        arrCurrent = pv.get_voltage(arrVoltage, irrad, temp)
         vRef = arrVoltage
         if self.temp > 0.2:
             if self.cycle == 0:
                 vRef = round(
-                    random.random() * globalMpptAlgorithm.MAX_VOLTAGE, 2
+                    random.random() * ImprovedSA.MAX_VOLTAGE, 2
                 )  # choose random value for vRef
                 self.cycle += 1
                 self.vOld = arrVoltage
@@ -150,19 +150,19 @@ class improvedSA(globalMpptAlgorithm):
                         self.iOld = arrCurrent
                         vRef = arrVoltage
                 if self.cycle % 4 == 0:  # decrease temperature after every 4 cycles
-                    self.temp = self.temp * improvedSA.ALPHA
+                    self.temp = self.temp * ImprovedSA.ALPHA
                     print("Temp: " + str(self.temp))
                     # self.searchRange = GlobalMPPTAlgorithm.MAX_VOLTAGE*(self.temp/ImprovedSA.INIT_TEMP)
                 self.cycle += 1
                 vRef = round(
-                    random.random() * globalMpptAlgorithm.MAX_VOLTAGE, 2
+                    random.random() * GlobalMPPTAlgorithm.MAX_VOLTAGE, 2
                 )  # get a new random sample
                 # self.flag = not self.flag
         else:
             if self.startLocal:
                 vRef = self.vOld
                 self.startLocal = False  # start converging to global maximum
-                self._model.setup(self.vOld, 0, globalMpptAlgorithm.MAX_VOLTAGE)
+                self._model.setup(self.vOld, 0, GlobalMPPTAlgorithm.MAX_VOLTAGE)
             elif self.kick:  # start local mppt algorithm.
                 vRef = arrVoltage + 0.02
                 self.kick = False
@@ -180,7 +180,7 @@ class improvedSA(globalMpptAlgorithm):
                 if needsChange:
                     vRef = 0
                     self.cycle = 0
-                    self.temp = improvedSA.INIT_TEMP
+                    self.temp = ImprovedSA.INIT_TEMP
                     self.startLocal = True
                     self.kick = True
                     self.runningHistory.clear()
@@ -200,9 +200,9 @@ class improvedSA(globalMpptAlgorithm):
         -------
         None.
         """
-        super(improvedSA, self).reset()
-        self.temp = improvedSA.INIT_TEMP
-        self.step = improvedSA.INIT_STEP
+        super(ImprovedSA, self).reset()
+        self.temp = ImprovedSA.INIT_TEMP
+        self.step = ImprovedSA.INIT_STEP
         self.no_accept = 0
         self.no_perturb = 0
         self.power_max = 0

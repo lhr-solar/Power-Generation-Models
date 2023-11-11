@@ -53,12 +53,12 @@ Ternary Search: https://en.wikipedia.org/wiki/Ternary_search
 from math import sqrt
 
 # Custom Imports.
-from models.mppt.mppt_algorihtms.localmpptalgorithms.localMpptAlgorithm import localMpptAlgorithm
+from mppt.mppt_algorihtms.localmpptalgorithms.localMpptAlgorithm import LocalMpptAlgorithm
 import environment.environment as ENV
 import pv.pv as PV
 
 
-class ternary(localMpptAlgorithm):
+class Ternary(LocalMpptAlgorithm):
     """
     The Ternary class is a derived class of LocalMPPTAlgorithm. Ternary utilizes
     splitting the search space into third to determine the position of the next
@@ -69,7 +69,7 @@ class ternary(localMpptAlgorithm):
     q = 0.33  # Roughly the same as dividing by 3.
 
     def __init__(self, numCells=1, strideType="Fixed"):
-        super(ternary, self).__init__(numCells, "Ternary", strideType)
+        super(Ternary, self).__init__(numCells, "Ternary", strideType)
 
         # Current algorithm internal cycle.
         self.cycle = 0
@@ -83,10 +83,10 @@ class ternary(localMpptAlgorithm):
         self.powerL2 = 0
 
     def getReferenceVoltage(self, arrVoltage, environment: ENV, pv: PV):
-        dataf = ENV.get_voxels()
+        dataf = environment.get_voxels()
         irrad = dataf["IRRAD"]
         temp = dataf["TEMP"]
-        arrCurrent = PV.get_voltage(arrVoltage, irrad, temp)
+        arrCurrent = pv.get_voltage(arrVoltage, irrad, temp)
         vRef = 0
         if self.cycle == 0:
             self.powerL2 = arrVoltage * arrCurrent
@@ -108,7 +108,7 @@ class ternary(localMpptAlgorithm):
         return vRef
 
     def reset(self):
-        super(ternary, self).reset()
+        super(Ternary, self).reset()
         self.cycle = 0
         self.l1 = self.leftBound
         self.l2 = self.rightBound
